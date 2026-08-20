@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Analizador Predictivo PRO - Ruleta Física</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <style>
+        .canvas-wrapper { width: 100%; max-width: 260px; margin: 0 auto; position: relative; }
+        .square-container { position: relative; width: 100%; padding-bottom: 100%; border-radius: 50%; }
+        .square-container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        /* Contenedores dinámicos para la Pista (Horizontal y Vertical) */
+        .racetrack-container { position: relative; width: 100%; margin: 0 auto; transition: padding 0.3s ease, max-width 0.3s ease; }
+        .racetrack-h { max-width: 100%; padding-bottom: 35%; margin-top: 10px; margin-bottom: 10px; }
+        .racetrack-v { max-width: 180px; padding-bottom: 190%; margin-top: 5px; }
+        .racetrack-container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
+
+        .btn-number { transition: transform 0.1s ease, filter 0.1s ease; touch-action: manipulation; }
+        .btn-number:active { transform: scale(0.92); filter: brightness(1.2); }
+        .prediction-card { background: linear-gradient(135deg, #1f2937 0%, #0f172a 100%); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+        .stat-input { background-color: #111827; border: 1px solid #374151; color: white; text-align: right; border-radius: 0.375rem; padding: 0.25rem 0.5rem; width: 60px; font-family: monospace; }
+        .stat-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        #historial-display::-webkit-scrollbar { display: none; }
+        #historial-display { -ms-overflow-style: none; scrollbar-width: none; }
+        .dir-indicator { font-size: 0.6rem; margin-top: -2px; opacity: 0.7; display: block; }
+        
+        .ai-panel { background: linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%); border-color: #4c1d95; }
+        .ai-text { font-size: 0.85rem; line-height: 1.5; color: #cbd5e1; }
+        .ai-text strong { color: #a78bfa; }
+        .spinner { border: 2px solid rgba(255, 255, 255, 0.1); border-left-color: #a78bfa; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .legal-modal-overlay { background-color: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 50; }
+        .legal-content-scroll::-webkit-scrollbar { width: 6px; }
+        .legal-content-scroll::-webkit-scrollbar-track { background: #111827; }
+        .legal-content-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen p-3 md:p-6 font-sans select-none">
+
+    <div class="max-w-7xl mx-auto">
+        
+        <header class="mb-5 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-gray-800 pb-4">
+            <div class="text-center md:text-left w-full md:w-auto">
+                <h1 class="text-2xl font-extrabold text-white tracking-tight flex items-center justify-center md:justify-start gap-2">
+                    <span class="text-blue-500">◈</span> SectorAnalyzer <span class="text-[10px] bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded border border-blue-800">RACETRACK v6</span>
+                </h1>
+            </div>
+            
+            <div class="flex gap-2 w-full md:w-auto justify-center">
+                <button onclick="cambiarModo('exacto')" id="btn-modo-exacto" class="flex-1 md:flex-none bg-blue-600 px-4 py-2 rounded-lg text-sm font-bold text-white shadow-lg border border-blue-500">Modo Tiradas</button>
+                <button onclick="cambiarModo('macro')" id="btn-modo-macro" class="flex-1 md:flex-none bg-gray-800 px-4 py-2 rounded-lg text-sm font-bold text-gray-300 border border-gray-700">Modo Gráficos</button>
+            </div>
+        </header>
+
+        <div class="flex flex-col xl:flex-row gap-6">
+
+            <!-- COLUMNA IZQUIERDA: MAPAS TÉRMICOS -->
+            <div class="w-full xl:w-5/12 flex flex-col gap-6">
+                
+                <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800 flex flex-col relative overflow-hidden">
+                    <div id="macro-overlay" class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-blue-600 hidden"></div>
+                    
+                    <div class="w-full flex justify-between items-center mb-4 z-10 border-b border-gray-800 pb-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h2 class="text-lg font-bold text-gray-200">Mapa Balístico</h2>
+                            <!-- SELECTOR DE VISTA -->
+                            <div class="flex bg-gray-950 rounded shadow-inner border border-gray-800 ml-1">
+                                <button onclick="switchVistaMap('cilindro')" id="btn-vista-cilindro" class="px-2 py-1 bg-blue-600 text-white font-bold text-[10px] rounded-l transition-colors">ÓVALO</button>
+                                <button onclick="switchVistaMap('pista')" id="btn-vista-pista" class="px-2 py-1 bg-transparent text-gray-500 hover:text-gray-300 font-bold text-[10px] rounded-r transition-colors">PISTA</button>
+                            </div>
+                            <!-- BOTÓN GIRAR (Solo Pista) -->
+                            <button onclick="toggleOrientacionPista()" id="btn-ori-pista" class="hidden px-2 py-1 bg-gray-800 text-gray-400 hover:text-white font-bold text-[10px] rounded border border-gray-700 transition-colors shadow-sm ml-1">⟳ GIRAR</button>
+                        </div>
+                        <span id="status-indicator" class="text-[10px] font-bold text-red-500 flex items-center gap-1 bg-gray-950 px-2 py-1 rounded border border-gray-800">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> INICIANDO...
+                        </span>
+                    </div>
+                    
+                    <!-- VISTA CILINDRO REDONDO -->
+                    <div id="cilindro-wrapper" class="canvas-wrapper z-10 w-full block">
+                        <div class="square-container">
+                            <canvas id="ruletaCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- VISTA PISTA (RACETRACK) -->
+                    <div id="pista-wrapper" class="racetrack-container racetrack-h z-10 w-full hidden">
+                        <canvas id="pistaCanvas"></canvas>
+                    </div>
+                    
+                    <!-- LEYENDA TÉRMICA -->
+                    <div class="mt-4 pt-3 border-t border-gray-800 flex flex-col items-center w-full z-10">
+                        <span class="text-[9px] text-gray-500 mb-1 uppercase font-bold tracking-wider">Intensidad Térmica (Probabilidad)</span>
+                        <div class="w-full max-w-[220px] h-2.5 rounded-full shadow-inner" id="termal-legend" style="background: linear-gradient(to right, rgb(15,15,30), rgb(0,150,255), rgb(0,255,100), rgb(255,200,0), rgb(255,0,0));"></div>
+                        <div class="w-full max-w-[220px] flex justify-between mt-1 px-1">
+                            <span class="text-[8px] text-gray-400">Frío / Base</span>
+                            <span class="text-[8px] text-gray-400">Media</span>
+                            <span class="text-[8px] font-bold" id="termal-hot-text" style="color: rgb(255,0,0);">Máxima / Caliente</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="prediction-card p-5 rounded-2xl border border-blue-900/50 relative overflow-hidden shadow-xl">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600"></div>
+                    <h2 class="text-lg font-bold text-white mb-1 flex items-center gap-2">🎯 Secciones Más Probables</h2>
+                    <p class="text-[11px] text-gray-400 mb-4">Calculado usando mapa de calor, biometría del crupier y dirección de la bola.</p>
+                    
+                    <div id="prediction-panel">
+                        <div class="grid grid-cols-1 gap-3" id="prediction-list"></div>
+                    </div>
+                </div>
+
+                <div class="ai-panel p-5 rounded-2xl border relative overflow-hidden shadow-xl mt-6">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500"></div>
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                Asesor Balístico IA
+                            </h2>
+                            <p class="text-[11px] text-gray-400 mt-1">Análisis predictivo profundo potenciado por Gemini.</p>
+                        </div>
+                        <button onclick="solicitarAnalisisIA()" id="btn-ai-trigger" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-[0_0_10px_rgba(168,85,247,0.4)] flex items-center gap-2">
+                            <span>Analizar Mesa</span>
+                        </button>
+                    </div>
+                    
+                    <div id="ai-output-container" class="bg-black/40 rounded-xl p-4 border border-purple-900/50 hidden">
+                        <div id="ai-loading" class="hidden text-center py-2 text-purple-300 text-xs font-mono">
+                            <span class="spinner mr-2"></span> Evaluando biometría y entropía del cilindro...
+                        </div>
+                        <div id="ai-report" class="ai-text"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- COLUMNA DERECHA: ENTRADA DE DATOS -->
+            <div class="w-full xl:w-7/12">
+                
+                <!-- ============================================== -->
+                <!-- PANEL MODO EXACTO -->
+                <!-- ============================================== -->
+                <div id="panel-exacto" class="flex flex-col gap-6">
+                    
+                    <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800">
+                        <h2 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">⚙️ Perfil Físico de la Mesa</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="bg-gray-950 p-2 rounded border border-gray-700">
+                                <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Tipo de Ruleta</label>
+                                <div class="flex flex-wrap gap-1">
+                                    <button onclick="setPerfil('tipo', 'manual')" id="pf-tipo-manual" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-blue-600 text-white font-bold transition-colors">Manual</button>
+                                    <button onclick="setPerfil('tipo', 'auto')" id="pf-tipo-auto" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Automática</button>
+                                </div>
+                            </div>
+                            <div class="bg-gray-950 p-2 rounded border border-gray-700 pf-manual-only">
+                                <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Sexo Crupier</label>
+                                <div class="flex flex-wrap gap-1">
+                                    <button onclick="setPerfil('sexo', 'mujer')" id="pf-sexo-mujer" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-blue-600 text-white font-bold transition-colors">Mujer</button>
+                                    <button onclick="setPerfil('sexo', 'hombre')" id="pf-sexo-hombre" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Hombre</button>
+                                </div>
+                            </div>
+                            <div class="bg-gray-950 p-2 rounded border border-gray-700 pf-manual-only">
+                                <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Postura</label>
+                                <div class="flex flex-wrap gap-1">
+                                    <button onclick="setPerfil('postura', 'pie')" id="pf-postura-pie" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-blue-600 text-white font-bold transition-colors">De Pie</button>
+                                    <button onclick="setPerfil('postura', 'sentado')" id="pf-postura-sentado" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Sentado</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800">
+                        <div class="flex justify-between items-center mb-2">
+                             <h2 class="text-sm font-semibold text-gray-200 flex items-center gap-2">📥 Importación Rápida</h2>
+                             <div class="flex items-center gap-1 bg-gray-950 p-1 rounded-lg border border-gray-700">
+                                <span class="text-[9px] text-gray-500 ml-1 uppercase">Dir. Último Dato:</span>
+                                <button onclick="setDireccionImport('CW')" id="btn-imp-cw" class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-colors">↻ Der</button>
+                                <button onclick="setDireccionImport('CCW')" id="btn-imp-ccw" class="text-gray-400 hover:text-white px-2 py-0.5 rounded text-[10px] font-bold transition-colors">↺ Izq</button>
+                            </div>
+                        </div>
+
+                        <div class="flex border-b border-gray-700 mb-3">
+                            <button onclick="switchImportTab('texto')" id="tab-import-texto" class="px-3 py-1 text-xs font-bold border-b-2 border-blue-500 text-blue-400">Pegar Historial</button>
+                            <button onclick="switchImportTab('img')" id="tab-import-img" class="px-3 py-1 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-300">Leer Imágenes (OCR)</button>
+                        </div>
+
+                        <div id="import-texto-container" class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="paste-input" class="flex-grow bg-gray-950 border border-gray-700 text-white text-sm rounded-lg p-2 font-mono" placeholder="Ej: 32, 15, 19...">
+                            <button onclick="procesarPegado()" class="w-full sm:w-auto bg-blue-700 hover:bg-blue-600 text-white font-bold py-2 px-5 rounded-lg text-sm">Importar</button>
+                        </div>
+
+                        <div id="import-img-container" class="hidden flex-col gap-3">
+                            <p class="text-[10px] text-gray-400 leading-tight">
+                                💡 <strong class="text-blue-300">Instrucciones:</strong> Recorte la imagen para que <span class="text-white underline">solo aparezcan los dígitos</span> que salieron (sin paño, sin chat). Seleccione las capturas en el orden correcto de secuencia para una mejor lectura.
+                            </p>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="file" id="image-upload" accept="image/*" multiple class="block w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:font-semibold file:bg-blue-900 file:text-blue-200">
+                                <button onclick="procesarImagenes()" id="btn-ocr" class="w-full sm:w-auto bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-1.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2">
+                                    📸 Escanear
+                                </button>
+                            </div>
+                            <div id="ocr-status" class="hidden bg-gray-950 p-2 rounded border border-gray-700 text-xs font-mono text-gray-400 text-center"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800">
+                        <div class="flex flex-wrap justify-between items-center mb-3 gap-2">
+                            <h2 class="text-md font-semibold text-gray-200">Teclado de Registro</h2>
+                            <div class="flex items-center gap-1 bg-gray-950 p-1 rounded-lg border border-gray-700">
+                                <span class="text-[10px] text-gray-500 ml-1">BOLA:</span>
+                                <button onclick="setDireccion('CW')" id="btn-dir-cw" class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold transition-colors">↻ Der</button>
+                                <button onclick="setDireccion('CCW')" id="btn-dir-ccw" class="text-gray-400 hover:text-white px-3 py-1 rounded text-xs font-bold transition-colors">↺ Izq</button>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="deshacerTirada()" class="px-2 py-1 text-[10px] bg-gray-800 rounded border border-gray-600 text-gray-300">↺ Deshacer</button>
+                                <button onclick="limpiarHistorial()" class="px-2 py-1 text-[10px] bg-red-900/30 rounded border border-red-800/50 text-red-400">Limpiar</button>
+                            </div>
+                        </div>
+                        <div id="number-pad" class="flex flex-col gap-1"></div>
+                    </div>
+
+                    <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-sm font-semibold text-gray-300">Secuencia (Total: <span id="total-tiradas" class="text-white">0</span>)</h2>
+                        </div>
+                        <div id="historial-display" class="flex gap-1 overflow-x-auto pb-2 text-lg font-mono min-h-[44px] items-center">
+                            <span class="text-gray-600 text-sm italic">Sin datos...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- PANEL MODO MACRO -->
+                <!-- ============================================== -->
+                <div id="panel-macro" class="hidden flex-col gap-6">
+                    <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800 relative z-10">
+                         <h2 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">⚙️ Perfil Físico de la Mesa (Macro)</h2>
+                         <p class="text-[10px] text-gray-400 mb-3">Ajusta el tamaño del clúster físico al analizar los porcentajes del gráfico.</p>
+                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="bg-gray-950 p-2 rounded border border-gray-700">
+                                <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Tipo de Ruleta</label>
+                                <div class="flex flex-wrap gap-1">
+                                    <button onclick="setPerfilMacro('tipo', 'manual')" id="pfm-tipo-manual" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-purple-600 text-white font-bold transition-colors">Manual</button>
+                                    <button onclick="setPerfilMacro('tipo', 'auto')" id="pfm-tipo-auto" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Automática</button>
+                                </div>
+                            </div>
+                            <div class="bg-gray-950 p-2 rounded border border-gray-700 pfm-manual-only">
+                                <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Sexo Crupier</label>
+                                <div class="flex flex-wrap gap-1">
+                                    <button onclick="setPerfilMacro('sexo', 'mujer')" id="pfm-sexo-mujer" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-purple-600 text-white font-bold transition-colors">Mujer</button>
+                                    <button onclick="setPerfilMacro('sexo', 'hombre')" id="pfm-sexo-hombre" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Hombre</button>
+                                </div>
+                            </div>
+                            <div class="bg-gray-950 p-2 rounded border border-gray-700 pfm-manual-only">
+                                <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Postura</label>
+                                <div class="flex flex-wrap gap-1">
+                                    <button onclick="setPerfilMacro('postura', 'pie')" id="pfm-postura-pie" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-purple-600 text-white font-bold transition-colors">De Pie</button>
+                                    <button onclick="setPerfilMacro('postura', 'sentado')" id="pfm-postura-sentado" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Sentado</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 p-5 rounded-2xl shadow-xl border border-blue-900/50 relative">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-2xl"></div>
+                        <h2 class="text-lg font-bold text-white mb-2">📊 Datos del Gráfico del Casino</h2>
+                        <p class="text-[11px] text-gray-400 mb-5 border-b border-gray-800 pb-3">Ingresa los porcentajes tal cual aparecen en la pantalla del casino.</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                            <div class="bg-gray-950 p-3 rounded-xl border border-gray-800">
+                                <h3 class="text-[10px] font-bold text-gray-500 mb-2 uppercase text-center">Colores</h3>
+                                <div class="flex justify-around items-center">
+                                    <div class="flex flex-col items-center gap-1"><div class="w-5 h-5 bg-red-600 rounded"></div><div class="flex items-center"><input type="number" id="mac-red" class="stat-input w-14 text-sm" value="46"><span class="text-gray-500 text-xs ml-1">%</span></div></div>
+                                    <div class="flex flex-col items-center gap-1"><div class="w-5 h-5 bg-gray-900 border border-gray-600 rounded"></div><div class="flex items-center"><input type="number" id="mac-black" class="stat-input w-14 text-sm" value="50"><span class="text-gray-500 text-xs ml-1">%</span></div></div>
+                                    <div class="flex flex-col items-center gap-1"><div class="w-5 h-5 bg-green-600 rounded"></div><div class="flex items-center"><input type="number" id="mac-green" class="stat-input w-14 text-sm" value="4"><span class="text-gray-500 text-xs ml-1">%</span></div></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 grid grid-cols-2 gap-2">
+                                <div>
+                                    <h3 class="text-[9px] font-bold text-gray-500 mb-1 uppercase">Paridad</h3>
+                                    <div class="flex justify-between items-center text-xs mb-1 text-gray-300"><span>PAR:</span> <div><input type="number" id="mac-even" class="stat-input w-10 text-xs px-1" value="48"></div></div>
+                                    <div class="flex justify-between items-center text-xs text-gray-300"><span>IMP:</span> <div><input type="number" id="mac-odd" class="stat-input w-10 text-xs px-1" value="48"></div></div>
+                                </div>
+                                <div>
+                                    <h3 class="text-[9px] font-bold text-gray-500 mb-1 uppercase">Mitades</h3>
+                                    <div class="flex justify-between items-center text-xs mb-1 text-gray-300"><span>1-18:</span> <div><input type="number" id="mac-low" class="stat-input w-10 text-xs px-1" value="50"></div></div>
+                                    <div class="flex justify-between items-center text-xs text-gray-300"><span>19-36:</span> <div><input type="number" id="mac-high" class="stat-input w-10 text-xs px-1" value="46"></div></div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 grid grid-cols-2 gap-3 md:col-span-2">
+                                <div>
+                                    <h3 class="text-[10px] font-bold text-gray-500 mb-2 uppercase text-center">Columnas</h3>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between items-center text-xs text-gray-300"><span>1ª:</span> <input type="number" id="mac-col1" class="stat-input w-12 px-1" value="31"></div>
+                                        <div class="flex justify-between items-center text-xs text-gray-300"><span>2ª:</span> <input type="number" id="mac-col2" class="stat-input w-12 px-1" value="34"></div>
+                                        <div class="flex justify-between items-center text-xs text-gray-300"><span>3ª:</span> <input type="number" id="mac-col3" class="stat-input w-12 px-1" value="31"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="text-[10px] font-bold text-gray-500 mb-2 uppercase text-center">Docenas</h3>
+                                    <div class="space-y-1">
+                                        <div class="flex justify-between items-center text-xs text-gray-300"><span>1ª:</span> <input type="number" id="mac-doz1" class="stat-input w-12 px-1" value="33"></div>
+                                        <div class="flex justify-between items-center text-xs text-gray-300"><span>2ª:</span> <input type="number" id="mac-doz2" class="stat-input w-12 px-1" value="34"></div>
+                                        <div class="flex justify-between items-center text-xs text-gray-300"><span>3ª:</span> <input type="number" id="mac-doz3" class="stat-input w-12 px-1" value="29"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="calcularPrediccionMacro()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-3 rounded-xl shadow-lg uppercase text-sm active:scale-95 transition-transform">
+                            Analizar Intersecciones
+                        </button>
+                        <div id="macro-results" class="mt-5 hidden border-t border-gray-800 pt-4">
+                            <h3 class="text-xs font-bold text-gray-400 mb-2 text-center">NÚMEROS CON MAYOR CALOR (INDIVIDUAL)</h3>
+                            <div id="macro-top-numbers" class="flex flex-wrap justify-center gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="mt-8 pt-4 border-t border-gray-800 text-center pb-24 md:pb-4">
+            <p class="text-xs text-gray-500">
+                &copy; 2026 SectorAnalyzer. Herramienta de análisis predictivo. <br class="md:hidden">
+                <button onclick="abrirModalLegal()" class="text-blue-400 hover:text-blue-300 underline mt-1 md:mt-0 md:ml-2 transition-colors">Ver Reglas, Privacidad y Deslinde de Responsabilidad</button>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Modal Legal -->
+    <div id="modal-legal" class="fixed inset-0 legal-modal-overlay flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col transform scale-95 transition-transform duration-300" id="modal-legal-content">
+            <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-800/50 rounded-t-2xl">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">⚖️ Términos, Privacidad y Responsabilidad</h3>
+                <button onclick="cerrarModalLegal()" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto legal-content-scroll text-sm text-gray-300 space-y-4">
+                <div>
+                    <h4 class="font-bold text-white mb-1 text-base">1. Deslinde de Responsabilidad Financiera y Apuestas</h4>
+                    <p>El uso de <strong>SectorAnalyzer</strong> es bajo su propio y exclusivo riesgo. Esta herramienta proporciona análisis estadísticos basados en mapas de calor y leyes físicas teóricas. <strong>Bajo ninguna circunstancia garantiza ganancias o aciertos.</strong> La ruleta es un juego de azar puro con ventaja matemática absoluta para el casino. El creador, desarrollador o distribuidor de este software <strong>NO se hace responsable por ninguna pérdida económica, financiera o daño</strong> derivado del uso de esta herramienta. <strong>Usted asume el 100% de la responsabilidad sobre el uso de su dinero.</strong> Juegue de manera responsable y nunca apueste dinero que no pueda permitirse perder.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 text-base">2. Reglas de Uso</h4>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>El uso de esta herramienta está estrictamente prohibido para menores de 18 años.</li>
+                        <li>Esta aplicación está diseñada exclusivamente con fines educativos, de entretenimiento y de experimentación estadística.</li>
+                        <li>Es su entera responsabilidad verificar si el uso de software de asistencia o tracking estadístico está permitido en la jurisdicción, casino físico o plataforma en línea donde pretende utilizarlo.</li>
+                        <li>Queda prohibido el uso de esta herramienta para cualquier actividad ilícita.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 text-base">3. Política de Privacidad</h4>
+                    <p>Valoramos y respetamos profundamente su privacidad. <strong>No almacenamos, recopilamos, compartimos ni enviamos sus datos de uso, historiales de tiradas o información personal a servidores externos.</strong> Todo el procesamiento de datos (incluido el análisis del motor de Inteligencia Artificial y el reconocimiento de texto OCR para las imágenes) se ejecuta y procesa de forma segura a través de integraciones donde su información no queda ligada a su identidad personal. Sus tiradas desaparecen al limpiar el historial o cerrar la ventana.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white mb-1 text-base">4. Uso de Cookies (Almacenamiento Local)</h4>
+                    <p>Utilizamos el almacenamiento local de su navegador (tecnología similar a las cookies técnicas) única y exclusivamente para recordar sus preferencias de uso, como la aceptación de estos términos para no mostrar el aviso constantemente. No utilizamos cookies de rastreo publicitario ni compartimos esta información con terceros.</p>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-800 bg-gray-800/30 rounded-b-2xl text-right">
+                <button onclick="cerrarModalLegal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-colors">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie / Disclaimer Banner -->
+    <div id="cookie-banner" class="fixed bottom-0 left-0 w-full bg-gray-900 border-t border-blue-900/50 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] z-40 transform translate-y-full transition-transform duration-500">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="text-xs md:text-sm text-gray-300">
+                <strong class="text-white">Aviso de Privacidad y Responsabilidad:</strong> Esta herramienta es solo para análisis estadístico. <strong>No garantiza ganancias.</strong> Usted es 100% responsable de su dinero. Usamos almacenamiento local (cookies) para recordar sus preferencias. Al usar la app, acepta nuestras <button onclick="abrirModalLegal()" class="text-blue-400 hover:underline">reglas, privacidad y deslinde de apuestas</button>.
+            </div>
+            <button onclick="aceptarTerminos()" class="whitespace-nowrap bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-transform active:scale-95 w-full md:w-auto">Aceptar y Entender</button>
+        </div>
+    </div>
+
+    <script>
+        const RUEDA_EUROPEA = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+        const ROJOS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+        const EXPECTED_RB = 48.6, EXPECTED_DOZ_COL = 32.4, EXPECTED_GREEN = 2.7; 
+        
+        // Zonas Interactivas de la Pista
+        const ZONAS_NUMS = {
+            'JUEGO 0': [12,35,3,26,0,32,15],
+            'VECINOS': [22,18,29,7,28,12,35,3,26,0,32,15,19,4,21,2,25],
+            'HUERFANOS': [1,20,14,31,9, 17,34,6],
+            'TERCIO': [27,13,36,11,30,8,23,10,5,24,16,33]
+        };
+
+        let historialTiradas = []; 
+        let estadisticasCalculadas = []; 
+        let zonasCalientes = []; 
+        let modoActual = 'exacto'; 
+        let vistaActualMap = 'cilindro'; 
+        let orientacionPista = 'H'; // Horizontal por defecto para ahorrar espacio
+        
+        let zonaSelectPista = null; 
+        let zonaHoverPista = null;
+        let zonasHitboxes = [];
+        
+        let appInicializada = false;
+
+        let perfilFisicoExacto = { tipo: 'manual', sexo: 'mujer', postura: 'pie' };
+        let perfilFisicoMacro = { tipo: 'manual', sexo: 'mujer', postura: 'pie' };
+        
+        let direccionActualBola = 'CW'; 
+        let direccionImportacion = 'CW'; 
+
+        function iniciarApp() {
+            if (appInicializada) return;
+            try { generarTeclado(); actualizarUIExacto(); initPistaEvents(); appInicializada = true; } catch (e) { console.error(e); }
+        }
+        iniciarApp(); document.addEventListener('DOMContentLoaded', iniciarApp);
+        window.addEventListener('resize', () => { if(appInicializada) dibujarMapas(); });
+
+        function switchVistaMap(vista) {
+            vistaActualMap = vista;
+            document.getElementById('cilindro-wrapper').classList.toggle('hidden', vista !== 'cilindro');
+            document.getElementById('cilindro-wrapper').classList.toggle('block', vista === 'cilindro');
+            document.getElementById('pista-wrapper').classList.toggle('hidden', vista !== 'pista');
+            document.getElementById('pista-wrapper').classList.toggle('block', vista === 'pista');
+            
+            document.getElementById('btn-ori-pista').style.display = vista === 'pista' ? 'block' : 'none';
+
+            document.getElementById('btn-vista-cilindro').className = vista === 'cilindro' ? "px-2 py-1 bg-blue-600 text-white font-bold text-[10px] rounded-l transition-colors" : "px-2 py-1 bg-transparent text-gray-500 hover:text-gray-300 font-bold text-[10px] rounded-l transition-colors";
+            document.getElementById('btn-vista-pista').className = vista === 'pista' ? "px-2 py-1 bg-blue-600 text-white font-bold text-[10px] rounded-r transition-colors" : "px-2 py-1 bg-transparent text-gray-500 hover:text-gray-300 font-bold text-[10px] rounded-r transition-colors";
+            
+            dibujarMapas();
+        }
+
+        function toggleOrientacionPista() {
+            orientacionPista = orientacionPista === 'V' ? 'H' : 'V';
+            const wrapper = document.getElementById('pista-wrapper');
+            const btn = document.getElementById('btn-ori-pista');
+            if (orientacionPista === 'H') {
+                wrapper.classList.remove('racetrack-v');
+                wrapper.classList.add('racetrack-h');
+                btn.innerText = '⟳ VERTICAL';
+            } else {
+                wrapper.classList.remove('racetrack-h');
+                wrapper.classList.add('racetrack-v');
+                btn.innerText = '⟳ HORIZONTAL';
+            }
+            dibujarMapas();
+        }
+
+        function cambiarModo(modo) {
+            modoActual = modo;
+            document.getElementById('panel-exacto').classList.toggle('hidden', modo !== 'exacto');
+            document.getElementById('panel-exacto').classList.toggle('flex', modo === 'exacto');
+            document.getElementById('panel-macro').classList.toggle('hidden', modo === 'exacto');
+            document.getElementById('panel-macro').classList.toggle('flex', modo !== 'exacto');
+            document.getElementById('macro-overlay').classList.toggle('hidden', modo === 'exacto');
+
+            document.getElementById('btn-modo-exacto').className = modo === 'exacto' 
+                ? "flex-1 md:flex-none bg-blue-600 px-4 py-2 rounded-lg text-sm font-bold text-white shadow-lg border border-blue-500" 
+                : "flex-1 md:flex-none bg-gray-800 px-4 py-2 rounded-lg text-sm font-bold text-gray-300 border border-gray-700";
+            document.getElementById('btn-modo-macro').className = modo === 'macro' 
+                ? "flex-1 md:flex-none bg-purple-600 px-4 py-2 rounded-lg text-sm font-bold text-white shadow-lg border border-purple-500" 
+                : "flex-1 md:flex-none bg-gray-800 px-4 py-2 rounded-lg text-sm font-bold text-gray-300 border border-gray-700";
+
+            // Actualizar colores de la leyenda térmica dinámicamente
+            if (modo === 'macro') {
+                document.getElementById('termal-legend').style.background = 'linear-gradient(to right, rgb(15,15,30), rgb(0,200,255), rgb(100,100,255), rgb(200,50,255), rgb(255,0,255))';
+                document.getElementById('termal-hot-text').style.color = 'rgb(255,0,255)';
+            } else {
+                document.getElementById('termal-legend').style.background = 'linear-gradient(to right, rgb(15,15,30), rgb(0,150,255), rgb(0,255,100), rgb(255,200,0), rgb(255,0,0))';
+                document.getElementById('termal-hot-text').style.color = 'rgb(255,0,0)';
+            }
+
+            if (modo === 'exacto') actualizarUIExacto(); 
+            else if(document.getElementById('macro-results').classList.contains('hidden')) {
+                estadisticasCalculadas = []; zonasCalientes = []; dibujarMapas();
+                document.getElementById('prediction-list').innerHTML = `<div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700 text-center text-gray-500 text-[11px]">Pulsa "Analizar Intersecciones" para procesar.</div>`;
+            } else {
+                calcularPrediccionMacro();
+            }
+        }
+
+        function setPerfil(c, v) {
+            perfilFisicoExacto[c] = v;
+            const bA = "flex-1 text-xs py-1 rounded border border-gray-600 bg-blue-600 text-white font-bold transition-colors", bI = "flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors";
+            if(c==='tipo'){ document.getElementById('pf-tipo-manual').className=v==='manual'?bA:bI; document.getElementById('pf-tipo-auto').className=v==='auto'?bA:bI; document.querySelectorAll('.pf-manual-only').forEach(el=>el.style.opacity=v==='manual'?"1":"0.3"); }
+            else if(c==='sexo'){ document.getElementById('pf-sexo-mujer').className=v==='mujer'?bA:bI; document.getElementById('pf-sexo-hombre').className=v==='hombre'?bA:bI; }
+            else if(c==='postura'){ document.getElementById('pf-postura-pie').className=v==='pie'?bA:bI; document.getElementById('pf-postura-sentado').className=v==='sentado'?bA:bI; }
+            actualizarUIExacto(); 
+        }
+
+        function setPerfilMacro(c, v) {
+            perfilFisicoMacro[c] = v;
+            const bA = "flex-1 text-xs py-1 rounded border border-gray-600 bg-purple-600 text-white font-bold transition-colors", bI = "flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors";
+            if(c==='tipo'){ document.getElementById('pfm-tipo-manual').className=v==='manual'?bA:bI; document.getElementById('pfm-tipo-auto').className=v==='auto'?bA:bI; document.querySelectorAll('.pfm-manual-only').forEach(el=>el.style.opacity=v==='manual'?"1":"0.3"); }
+            else if(c==='sexo'){ document.getElementById('pfm-sexo-mujer').className=v==='mujer'?bA:bI; document.getElementById('pfm-sexo-hombre').className=v==='hombre'?bA:bI; }
+            else if(c==='postura'){ document.getElementById('pfm-postura-pie').className=v==='pie'?bA:bI; document.getElementById('pfm-postura-sentado').className=v==='sentado'?bA:bI; }
+            if(!document.getElementById('macro-results').classList.contains('hidden')) calcularPrediccionMacro(); 
+        }
+
+        function setDireccion(dir) {
+            direccionActualBola = dir;
+            document.getElementById('btn-dir-cw').className = dir === 'CW' ? "bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold transition-colors" : "text-gray-400 hover:text-white px-3 py-1 rounded text-xs font-bold transition-colors";
+            document.getElementById('btn-dir-ccw').className = dir === 'CCW' ? "bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold transition-colors" : "text-gray-400 hover:text-white px-3 py-1 rounded text-xs font-bold transition-colors";
+        }
+        function alternarDireccion() { setDireccion(direccionActualBola === 'CW' ? 'CCW' : 'CW'); }
+
+        function setDireccionImport(dir) {
+            direccionImportacion = dir;
+            document.getElementById('btn-imp-cw').className = dir === 'CW' ? "bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-colors" : "text-gray-400 hover:text-white px-2 py-0.5 rounded text-[10px] font-bold transition-colors";
+            document.getElementById('btn-imp-ccw').className = dir === 'CCW' ? "bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-colors" : "text-gray-400 hover:text-white px-2 py-0.5 rounded text-[10px] font-bold transition-colors";
+        }
+
+        function switchImportTab(tab) {
+            document.getElementById('import-texto-container').classList.toggle('hidden', tab !== 'texto');
+            document.getElementById('import-texto-container').classList.toggle('flex', tab === 'texto');
+            document.getElementById('import-img-container').classList.toggle('hidden', tab !== 'img');
+            document.getElementById('import-img-container').classList.toggle('flex', tab === 'img');
+            document.getElementById('tab-import-texto').className = tab === 'texto' ? "px-3 py-1 text-xs font-bold border-b-2 border-blue-500 text-blue-400" : "px-3 py-1 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-300";
+            document.getElementById('tab-import-img').className = tab === 'img' ? "px-3 py-1 text-xs font-bold border-b-2 border-blue-500 text-blue-400" : "px-3 py-1 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-300";
+        }
+
+        function procesarPegado() {
+            const nums = document.getElementById('paste-input').value.match(/\d+/g);
+            if(nums) {
+                let nuevosDatos = [];
+                for(let i=0; i<nums.length; i++) { let n = parseInt(nums[i], 10); if(n>=0 && n<=36) nuevosDatos.push({ num: n, dir: '' }); }
+                if(nuevosDatos.length > 0) {
+                    let d = direccionImportacion;
+                    for(let i = nuevosDatos.length - 1; i >= 0; i--) { nuevosDatos[i].dir = d; d = d === 'CW' ? 'CCW' : 'CW'; }
+                    historialTiradas.push(...nuevosDatos); setDireccion(direccionImportacion === 'CW' ? 'CCW' : 'CW');
+                }
+                document.getElementById('paste-input').value = ''; actualizarUIExacto();
+            }
+        }
+
+        async function procesarImagenes() {
+            const fileInput = document.getElementById('image-upload'), statusPanel = document.getElementById('ocr-status'), btnOcr = document.getElementById('btn-ocr'), files = fileInput.files;
+            if (files.length === 0) { alert("Selecciona al menos una imagen."); return; }
+            statusPanel.classList.remove('hidden'); btnOcr.disabled = true; btnOcr.classList.add('opacity-50');
+            
+            let numsExt = [];
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    statusPanel.innerHTML = `Escaneando captura ${i+1} de ${files.length}...<br><span class="animate-pulse">⏳ Procesando OCR...</span>`;
+                    const { data: { text } } = await Tesseract.recognize(files[i], 'eng');
+                    const numsEnTexto = text.match(/\d+/g);
+                    if (numsEnTexto) numsEnTexto.forEach(n => { let num = parseInt(n, 10); if(num>=0 && num<=36) numsExt.push(num); });
+                }
+                if (numsExt.length > 0) {
+                    statusPanel.innerHTML = `✅ ¡Éxito! Encontrados ${numsExt.length} números.`; statusPanel.className = "bg-gray-950 p-2 rounded border border-green-800 text-xs font-mono text-green-400 text-center";
+                    let nuevosDatos = []; for(let i=0; i<numsExt.length; i++) nuevosDatos.push({ num: numsExt[i], dir: '' });
+                    let d = direccionImportacion; for(let i = nuevosDatos.length - 1; i >= 0; i--) { nuevosDatos[i].dir = d; d = d === 'CW' ? 'CCW' : 'CW'; }
+                    historialTiradas.push(...nuevosDatos); setDireccion(direccionImportacion === 'CW' ? 'CCW' : 'CW'); actualizarUIExacto();
+                } else {
+                    statusPanel.innerHTML = `⚠️ No se detectaron números. Intenta recortar mejor.`; statusPanel.className = "bg-gray-950 p-2 rounded border border-yellow-800 text-xs font-mono text-yellow-400 text-center";
+                }
+                setTimeout(() => { statusPanel.classList.add('hidden'); fileInput.value = ""; }, 4000);
+            } catch (err) {
+                console.error(err); statusPanel.innerHTML = `❌ Error al leer imagen.`; statusPanel.className = "bg-gray-950 p-2 rounded border border-red-800 text-xs font-mono text-red-400 text-center";
+            } finally { btnOcr.disabled = false; btnOcr.classList.remove('opacity-50'); }
+        }
+
+        function generarTeclado() {
+            const pad = document.getElementById('number-pad');
+            if (!pad) return; pad.innerHTML = ''; 
+            pad.appendChild(crearBotonNumero(0, "w-full bg-green-700 border-green-800 text-lg py-2.5 mb-1"));
+            const grid = document.createElement('div'); grid.className = "grid grid-cols-3 gap-1";
+            for (let i = 1; i <= 36; i++) grid.appendChild(crearBotonNumero(i, ROJOS.includes(i) ? "bg-[#b91c1c] border-[#7f1d1d]" : "bg-[#1f2937] border-[#030712]"));
+            pad.appendChild(grid);
+        }
+        function crearBotonNumero(n, c) {
+            const b = document.createElement('button'); b.innerText = n; b.className = `btn-number text-white font-bold py-2 rounded-md border-b-4 ${c}`;
+            b.onclick = () => { historialTiradas.push({ num: n, dir: direccionActualBola }); alternarDireccion(); actualizarUIExacto(); }; return b;
+        }
+
+        function deshacerTirada() { if (historialTiradas.length > 0) { historialTiradas.pop(); alternarDireccion(); actualizarUIExacto(); } }
+        function limpiarHistorial() { if(confirm("¿Limpiar sesión actual?")) { historialTiradas = []; actualizarUIExacto(); } }
+
+        function actualizarUIExacto() {
+            const total = historialTiradas.length;
+            let conteo = {}; RUEDA_EUROPEA.forEach(n => conteo[n] = 0);
+            historialTiradas.forEach(t => { conteo[t.num]++; });
+
+            estadisticasCalculadas = [];
+            for (let numStr in conteo) {
+                let num = parseInt(numStr);
+                let freqReal = total > 0 ? (conteo[num] / total) : 0;
+                let desvBase = total > 0 ? (freqReal - (1/37)) : 0;
+                let impactosMismaDir = historialTiradas.filter(t => t.num === num && t.dir === direccionActualBola).length;
+                if (impactosMismaDir > 0 && desvBase > 0) desvBase *= 1.25; 
+                estadisticasCalculadas.push({ numero: num, apariciones: conteo[num], desviacion: desvBase });
+            }
+
+            analizarClusteresFisicos(perfilFisicoExacto); dibujarMapas();
+            
+            const display = document.getElementById('historial-display');
+            document.getElementById('total-tiradas').innerText = total;
+            if (total === 0) {
+                display.innerHTML = '<span class="text-gray-600 text-sm italic">Sin datos...</span>';
+            } else {
+                display.innerHTML = '';
+                historialTiradas.forEach((t, idx) => {
+                    let n = t.num, wrap = document.createElement('div'); wrap.className = "flex flex-col items-center justify-center";
+                    let isLast = idx === total - 1, sc = isLast ? 'w-9 h-9 text-base shadow-[0_0_10px_rgba(255,255,255,0.3)] border-2 border-white' : 'w-7 h-7 text-xs opacity-80';
+                    let c = `inline-flex items-center justify-center rounded-full font-bold text-white flex-shrink-0 ${sc} ${n === 0 ? 'bg-green-600' : (ROJOS.includes(n) ? 'bg-red-600' : 'bg-gray-800 border border-gray-600')}`;
+                    let dirStr = t.dir === 'CW' ? '↻' : '↺', dirColor = t.dir === direccionActualBola ? 'text-blue-400' : 'text-gray-500';
+                    wrap.innerHTML = `<span class="${c}">${n}</span><span class="dir-indicator ${dirColor}">${dirStr}</span>`; display.appendChild(wrap);
+                });
+                display.scrollLeft = display.scrollWidth;
+            }
+
+            const list = document.getElementById('prediction-list'), ind = document.getElementById('status-indicator');
+            if (total < 12) { 
+                list.innerHTML = `<div class="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-center text-gray-500 text-[11px]">Calibrando... Ingrese al menos ${12-total} tiradas más.</div>`;
+                ind.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> CALIBRANDO`; ind.className = "text-[10px] font-bold text-red-500 flex items-center gap-1 bg-gray-950 px-2 py-1 rounded border border-gray-800";
+            } else {
+                ind.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span> ACTIVO`; ind.className = "text-[10px] font-bold text-green-400 flex items-center gap-1 bg-gray-950 px-2 py-1 rounded border border-gray-800";
+                renderizarSectores(list, false);
+            }
+        }
+
+        function getPropiedades(n) { if (n === 0) return { color: 'green', par: null, mitad: null, col: null, doz: null }; return { color: ROJOS.includes(n) ? 'red' : 'black', par: n % 2 === 0 ? 'even' : 'odd', mitad: n <= 18 ? 'low' : 'high', col: n % 3 === 0 ? 3 : n % 3, doz: Math.ceil(n / 12) }; }
+        function obtenerValorInput(id) { return parseFloat(document.getElementById(id).value) || 0; }
+        
+        function calcularPrediccionMacro() {
+            const stats = { red: obtenerValorInput('mac-red'), black: obtenerValorInput('mac-black'), green: obtenerValorInput('mac-green'), even: obtenerValorInput('mac-even'), odd: obtenerValorInput('mac-odd'), low: obtenerValorInput('mac-low'), high: obtenerValorInput('mac-high'), col1: obtenerValorInput('mac-col1'), col2: obtenerValorInput('mac-col2'), col3: obtenerValorInput('mac-col3'), doz1: obtenerValorInput('mac-doz1'), doz2: obtenerValorInput('mac-doz2'), doz3: obtenerValorInput('mac-doz3') };
+            estadisticasCalculadas = [];
+            for (let i = 0; i <= 36; i++) {
+                let score = 0; let p = getPropiedades(i);
+                if (i === 0) { score += (stats.green - EXPECTED_GREEN); } else {
+                    score += (p.color === 'red' ? (stats.red - EXPECTED_RB) : (stats.black - EXPECTED_RB));
+                    score += (p.par === 'even' ? (stats.even - EXPECTED_RB) : (stats.odd - EXPECTED_RB));
+                    score += (p.mitad === 'low' ? (stats.low - EXPECTED_RB) : (stats.high - EXPECTED_RB));
+                    score += (p.col === 1 ? (stats.col1 - EXPECTED_DOZ_COL) : p.col === 2 ? (stats.col2 - EXPECTED_DOZ_COL) : (stats.col3 - EXPECTED_DOZ_COL));
+                    score += (p.doz === 1 ? (stats.doz1 - EXPECTED_DOZ_COL) : p.doz === 2 ? (stats.doz2 - EXPECTED_DOZ_COL) : (stats.doz3 - EXPECTED_DOZ_COL));
+                }
+                estadisticasCalculadas.push({ numero: i, desviacion: score / 5, apariciones: 0 });
+            }
+            analizarClusteresFisicos(perfilFisicoMacro); dibujarMapas();
+            document.getElementById('status-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]"></span> MACRO ACTIVO`;
+            document.getElementById('status-indicator').className = "text-[10px] font-bold text-purple-400 flex items-center gap-1 bg-gray-950 px-2 py-1 rounded border border-gray-800";
+            renderizarSectores(document.getElementById('prediction-list'), true);
+            
+            const container = document.getElementById('macro-top-numbers'); document.getElementById('macro-results').classList.remove('hidden'); container.innerHTML = '';
+            [...estadisticasCalculadas].sort((a,b) => b.desviacion - a.desviacion).slice(0, 6).forEach(stat => {
+                const n = stat.numero;
+                container.innerHTML += `<div class="flex flex-col items-center justify-center bg-gray-900 p-1.5 rounded-lg border border-gray-700 w-12 shadow-md"><span class="w-7 h-7 flex items-center justify-center rounded-full font-bold text-white text-xs border border-gray-600 ${n===0?'bg-green-700':(ROJOS.includes(n)?'bg-red-700':'bg-gray-800')}">${n}</span><span class="text-[9px] text-gray-400 mt-1">H. ${(stat.desviacion>0?'+':'')}${stat.desviacion.toFixed(1)}</span></div>`;
+            });
+        }
+
+        function analizarClusteresFisicos(perfilActivo) {
+            zonasCalientes = []; let sectores = [];
+            let ventana = 5; if (perfilActivo.tipo === 'auto') ventana = 3; else { if (perfilActivo.postura === 'pie' || perfilActivo.sexo === 'hombre') ventana = 7; }
+            for (let i = 0; i < 37; i++) {
+                let e = 0, n = [];
+                for (let j = 0; j < ventana; j++) {
+                    let num = RUEDA_EUROPEA[(i + j) % 37];
+                    let stat = estadisticasCalculadas.find(s => s.numero === num);
+                    if(stat) e += stat.desviacion; n.push(num);
+                }
+                sectores.push({ inicioIdx: i, energia: e, numeros: n, centro: n[Math.floor(ventana/2)] });
+            }
+            sectores.sort((a, b) => b.energia - a.energia);
+            if (sectores[0] && sectores[0].energia > 0.05) {
+                let mult = perfilActivo.tipo === 'auto' ? 1.3 : 1.0; 
+                sectores[0].energia *= mult; zonasCalientes.push(sectores[0]);
+                let z2 = sectores.find(s => !s.numeros.some(num => sectores[0].numeros.includes(num)));
+                if (z2 && z2.energia > 0.03) { z2.energia *= mult; zonasCalientes.push(z2); }
+            }
+        }
+
+        function renderizarSectores(container, isMacro = false) {
+            container.innerHTML = '';
+            if (zonasCalientes.length === 0) { container.innerHTML = `<div class="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-center text-gray-400 text-xs">Mesa equilibrada. Sin sesgo balístico claro.</div>`; return; }
+            
+            zonasCalientes.forEach((zona, idx) => {
+                const p = idx === 0, conf = Math.min(99, 40 + (zona.energia * 150)).toFixed(1); 
+                let html = `
+                    <div class="bg-gray-900 rounded-lg p-3 border ${isMacro ? (p ? 'border-purple-500/50' : 'border-gray-700') : (p ? 'border-blue-500/60' : 'border-gray-700')} relative overflow-hidden shadow-lg">
+                        ${p ? `<div class="absolute -right-6 top-1 ${isMacro?'bg-purple-600':'bg-blue-600'} text-white text-[8px] font-bold px-6 py-0.5 rotate-45 shadow uppercase">TOP 1</div>` : ''}
+                        <div class="flex justify-between items-center mb-2 border-b border-gray-800 pb-1">
+                            <span class="text-xs text-gray-300">Sector principal: <span class="text-white text-lg font-bold ml-1">${zona.centro}</span></span>
+                            <span class="text-[10px] bg-gray-950 px-2 py-1 rounded text-green-400 font-mono">Confianza: ${conf}%</span>
+                        </div>
+                        <div class="flex gap-1 justify-center mt-2 flex-wrap">
+                `;
+                zona.numeros.forEach(n => { html += `<span class="w-7 h-7 flex items-center justify-center rounded-full font-bold text-white text-xs border border-gray-600 ${n===0?'bg-green-700':(ROJOS.includes(n)?'bg-red-700':'bg-gray-800')} shadow-md">${n}</span>`; });
+                html += `</div></div>`; container.innerHTML += html;
+            });
+        }
+
+        function initPistaEvents() {
+            if (window.pistaEventsAdded) return;
+            const canvas = document.getElementById('pistaCanvas');
+            
+            const handleInteract = (e) => {
+                if(vistaActualMap !== 'pista') return;
+                const rect = canvas.getBoundingClientRect();
+                const pr = window.devicePixelRatio || 1;
+                let clientX = e.clientX, clientY = e.clientY;
+                if(e.touches && e.touches.length > 0) {
+                    clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+                }
+                const mx = (clientX - rect.left) * pr, my = (clientY - rect.top) * pr;
+                
+                let drawX = mx, drawY = my;
+                if(orientacionPista === 'H') {
+                    const cx = canvas.width/2, cy = canvas.height/2;
+                    const rx = mx - cx, ry = my - cy;
+                    drawX = -ry + canvas.height/2; 
+                    drawY = rx + canvas.width/2;   
+                }
+                
+                let clicked = null;
+                for(let z of zonasHitboxes) {
+                    if(Math.hypot(drawX - z.x, drawY - z.y) < z.r) { clicked = z.id; break; }
+                }
+                
+                if (e.type === 'pointermove' || e.type === 'mousemove') {
+                    if (clicked !== zonaHoverPista) { zonaHoverPista = clicked; dibujarPista(); }
+                } else if (e.type === 'click' || e.type === 'touchstart') {
+                    e.preventDefault();
+                    zonaSelectPista = (zonaSelectPista === clicked && clicked !== null) ? null : clicked;
+                    dibujarPista();
+                }
+            };
+            
+            canvas.addEventListener('click', handleInteract);
+            canvas.addEventListener('mousemove', handleInteract);
+            canvas.addEventListener('touchstart', handleInteract, {passive: false});
+            canvas.addEventListener('mouseleave', () => { zonaHoverPista = null; dibujarPista(); });
+            window.pistaEventsAdded = true;
+        }
+
+        function getColorTermico(val, isMacro) {
+            val = Math.max(0, Math.min(1, val));
+            let cols = isMacro ? [{r:15,g:15,b:30}, {r:0,g:200,b:255}, {r:100,g:100,b:255}, {r:200,g:50,b:255}, {r:255,g:0,b:255}] : [{r:15,g:15,b:30}, {r:0,g:150,b:255}, {r:0,g:255,b:100}, {r:255,g:200,b:0}, {r:255,g:0,b:0}];
+            const iEsc = val * (cols.length - 1), i1 = Math.floor(iEsc), i2 = Math.ceil(iEsc);
+            if (i1 === i2) return `rgb(${cols[i1].r}, ${cols[i1].g}, ${cols[i1].b})`;
+            const p2 = iEsc - i1, p1 = 1 - p2;
+            return `rgb(${Math.round(cols[i1].r*p1+cols[i2].r*p2)}, ${Math.round(cols[i1].g*p1+cols[i2].g*p2)}, ${Math.round(cols[i1].b*p1+cols[i2].b*p2)})`;
+        }
+
+        function dibujarMapas() {
+            if (vistaActualMap === 'cilindro') dibujarCilindro();
+            else dibujarPista();
+        }
+
+        function dibujarCilindro() {
+            const canvas = document.getElementById('ruletaCanvas');
+            if (!canvas || !canvas.getContext) return;
+            const rect = canvas.getBoundingClientRect(); if (rect.width === 0) return;
+            const pr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * pr; canvas.height = rect.height * pr;
+            const ctx = canvas.getContext('2d'), cx = canvas.width/2, cy = canvas.height/2;
+            const r = Math.max(10, Math.min(cx, cy) - (10 * pr)), sa = (2 * Math.PI) / 37, isMac = modoActual === 'macro';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let maxD = 0.0001; estadisticasCalculadas.forEach(s => { if (s.desviacion > maxD) maxD = s.desviacion; });
+
+            RUEDA_EUROPEA.forEach((n, i) => {
+                const st = (i * sa) - (Math.PI / 2) - (sa / 2), en = st + sa;
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, st, en); ctx.closePath();
+                
+                let v = 0;
+                if (estadisticasCalculadas.length === 0) {
+                    ctx.fillStyle = n===0 ? '#166534' : (ROJOS.includes(n) ? '#7f1d1d' : '#111827');
+                    ctx.shadowBlur = 0;
+                } else { 
+                    let s = estadisticasCalculadas.find(x => x.numero === n);
+                    if (s && s.desviacion > 0) v = 0.2 + (s.desviacion / maxD) * 0.8; 
+                    let color = getColorTermico(v, isMac);
+                    ctx.fillStyle = color;
+                    
+                    // EFECTO DE CÁMARA TÉRMICA (DIFUMINADO Y MEZCLA)
+                    if (v > 0.2) {
+                        ctx.shadowColor = color;
+                        ctx.shadowBlur = (30 * v) * pr; // Más intensidad = mayor "sangrado" térmico
+                    } else {
+                        ctx.shadowBlur = 0;
+                    }
+                }
+                
+                ctx.fill(); 
+                ctx.shadowBlur = 0; // Reset para las líneas
+                
+                ctx.lineWidth = 1 * pr; 
+                // Hacer invisibles los bordes si el calor es alto, para que se mezclen los colores
+                ctx.strokeStyle = v > 0.3 ? 'rgba(3, 7, 18, 0.1)' : '#030712'; 
+                ctx.stroke();
+                
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(st + (sa / 2));
+                ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#000000'; ctx.shadowBlur = 4 * pr;
+                ctx.font = `bold ${r * 0.08}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(n.toString(), r * 0.86, 0); ctx.restore();
+            });
+
+            if (zonasCalientes.length > 0) {
+                zonasCalientes.forEach((z, idx) => {
+                    let len = z.numeros.length, stIdx = z.inicioIdx, enIdx = (stIdx + len - 1) % 37; 
+                    let st = (stIdx * sa) - (Math.PI / 2) - (sa / 2), en = (enIdx * sa) - (Math.PI / 2) + (sa / 2);
+                    if (en < st) en += 2 * Math.PI;
+                    ctx.beginPath(); ctx.arc(cx, cy, r + (2 * pr), st, en);
+                    ctx.lineWidth = (idx === 0 ? 5 : 2) * pr; ctx.strokeStyle = isMac ? (idx===0 ? '#d946ef' : '#8b5cf6') : (idx===0 ? '#3b82f6' : '#6b7280');
+                    ctx.stroke();
+                });
+            }
+
+            ctx.beginPath(); ctx.arc(cx, cy, r * 0.45, 0, 2 * Math.PI); ctx.fillStyle = '#030712'; ctx.fill();
+            ctx.lineWidth = 2 * pr; ctx.strokeStyle = isMac ? '#4c1d95' : '#1e3a8a'; ctx.stroke();
+            dibujarHudCentro(ctx, cx, cy, r, pr, isMac);
+        }
+
+        // MOTOR RENDER PISTA (Con Orientación Dinámica y Zonas Interactivas)
+        function dibujarPista() {
+            const canvas = document.getElementById('pistaCanvas');
+            if (!canvas || !canvas.getContext) return;
+            const rect = canvas.getBoundingClientRect(); if (rect.width === 0) return;
+            const pr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * pr; canvas.height = rect.height * pr;
+            const ctx = canvas.getContext('2d'), W_canvas = canvas.width, H_canvas = canvas.height, isMac = modoActual === 'macro';
+            ctx.clearRect(0, 0, W_canvas, H_canvas);
+
+            let drawW = W_canvas, drawH = H_canvas;
+            if (orientacionPista === 'H') {
+                drawW = H_canvas; drawH = W_canvas;
+                ctx.save();
+                ctx.translate(W_canvas/2, H_canvas/2);
+                ctx.rotate(-Math.PI/2);
+                ctx.translate(-drawW/2, -drawH/2);
+            }
+
+            const pad = 10 * pr;
+            const thick = drawW * 0.22; 
+            const R = (drawW - (pad * 2) - thick) / 2; 
+            let L = drawH - (pad * 2) - thick - (2 * R); 
+            if (L < 0) L = 0;
+            const cx = drawW / 2, cyTop = pad + thick/2 + R, cyBot = pad + thick/2 + R + L;
+            const P = 2 * Math.PI * R + 2 * L;
+
+            function getPistaCoords(t) {
+                let d = (t * P) % P; if (d < 0) d += P;
+                const arcL = Math.PI * R / 2;
+                if (d <= arcL) { // TR
+                    let ang = -Math.PI/2 + (d/R); return { x: cx + R * Math.cos(ang), y: cyTop + R * Math.sin(ang), a: ang };
+                }
+                d -= arcL;
+                if (d <= L) { // R Straight
+                    return { x: cx + R, y: cyTop + d, a: 0 };
+                }
+                d -= L;
+                if (d <= arcL) { // BR
+                    let ang = 0 + (d/R); return { x: cx + R * Math.cos(ang), y: cyBot + R * Math.sin(ang), a: ang };
+                }
+                d -= arcL;
+                if (d <= arcL) { // BL
+                    let ang = Math.PI/2 + (d/R); return { x: cx + R * Math.cos(ang), y: cyBot + R * Math.sin(ang), a: ang };
+                }
+                d -= arcL;
+                if (d <= L) { // L Straight
+                    return { x: cx - R, y: cyBot - d, a: Math.PI };
+                }
+                d -= L; // TL
+                let ang = Math.PI + (d/R); return { x: cx + R * Math.cos(ang), y: cyTop + R * Math.sin(ang), a: ang };
+            }
+
+            function getInnerEdge(t) {
+                let pt = getPistaCoords(t);
+                return { x: pt.x - (thick/2)*Math.cos(pt.a), y: pt.y - (thick/2)*Math.sin(pt.a) };
+            }
+
+            let maxD = 0.0001; estadisticasCalculadas.forEach(s => { if (s.desviacion > maxD) maxD = s.desviacion; });
+            let activeZ = zonaSelectPista || zonaHoverPista;
+
+            // Dibujar 37 segmentos
+            for (let i = 0; i < 37; i++) {
+                let n = RUEDA_EUROPEA[i];
+                let tStart = (i - 0.5) / 37, tEnd = (i + 0.5) / 37;
+                
+                ctx.beginPath();
+                const steps = 4;
+                for(let j=0; j<=steps; j++) {
+                    let pt = getPistaCoords(tStart + (tEnd-tStart)*(j/steps));
+                    let ox = pt.x + (thick/2)*Math.cos(pt.a), oy = pt.y + (thick/2)*Math.sin(pt.a);
+                    j===0 ? ctx.moveTo(ox, oy) : ctx.lineTo(ox, oy);
+                }
+                for(let j=steps; j>=0; j--) {
+                    let pt = getPistaCoords(tStart + (tEnd-tStart)*(j/steps));
+                    let ix = pt.x - (thick/2)*Math.cos(pt.a), iy = pt.y - (thick/2)*Math.sin(pt.a);
+                    ctx.lineTo(ix, iy);
+                }
+                ctx.closePath();
+
+                let isHighlighted = activeZ ? ZONAS_NUMS[activeZ].includes(n) : false;
+                let dimOthers = activeZ && !isHighlighted;
+
+                let v = 0;
+                if (estadisticasCalculadas.length === 0) {
+                    ctx.fillStyle = n===0 ? '#166534' : (ROJOS.includes(n) ? '#7f1d1d' : '#111827');
+                    ctx.shadowBlur = 0;
+                } else { 
+                    let s = estadisticasCalculadas.find(x => x.numero === n);
+                    if (s && s.desviacion > 0) v = 0.2 + (s.desviacion / maxD) * 0.8; 
+                    let color = getColorTermico(v, isMac);
+                    ctx.fillStyle = color;
+                    
+                    // EFECTO DE CÁMARA TÉRMICA
+                    if (v > 0.2 && !dimOthers) {
+                        ctx.shadowColor = color;
+                        ctx.shadowBlur = (30 * v) * pr;
+                    } else {
+                        ctx.shadowBlur = 0;
+                    }
+                }
+                
+                if (dimOthers) { ctx.fillStyle = '#111827'; ctx.globalAlpha = 0.3; ctx.shadowBlur = 0; } else { ctx.globalAlpha = 1.0; }
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                ctx.shadowBlur = 0; // Reset
+                
+                if (isHighlighted) {
+                    ctx.lineWidth = 3 * pr; ctx.strokeStyle = '#eab308'; // Amarillo brillante
+                } else {
+                    ctx.lineWidth = 1 * pr; 
+                    // Bordes suaves donde hay mucho calor para permitir la fusión de colores
+                    ctx.strokeStyle = (v > 0.3 && !dimOthers) ? 'rgba(3, 7, 18, 0.1)' : '#030712';
+                }
+                ctx.stroke();
+
+                // Texto Números
+                let midPt = getPistaCoords(i / 37);
+                ctx.save();
+                ctx.translate(midPt.x, midPt.y);
+                if (orientacionPista === 'H') ctx.rotate(Math.PI/2);
+                ctx.fillStyle = (dimOthers && !isHighlighted) ? '#4b5563' : '#ffffff';
+                ctx.shadowColor = '#000000'; ctx.shadowBlur = dimOthers ? 0 : 3 * pr;
+                ctx.font = `bold ${thick * 0.4}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(n.toString(), 0, 0);
+                ctx.restore();
+            }
+
+            // ARCOS EXTERNOS (ZONAS CALIENTES - TOP PREDICCIÓN)
+            if (zonasCalientes.length > 0 && !activeZ) {
+                zonasCalientes.forEach((z, idx) => {
+                    let stI = z.inicioIdx;
+                    ctx.beginPath();
+                    const segments = 20;
+                    for(let j=0; j<=segments; j++) {
+                        let t = (stI - 0.5 + (z.numeros.length)*(j/segments)) / 37;
+                        let pt = getPistaCoords(t);
+                        let ox = pt.x + (thick/2 + 2*pr)*Math.cos(pt.a), oy = pt.y + (thick/2 + 2*pr)*Math.sin(pt.a);
+                        j===0 ? ctx.moveTo(ox, oy) : ctx.lineTo(ox, oy);
+                    }
+                    ctx.lineWidth = (idx === 0 ? 5 : 2) * pr; ctx.strokeStyle = isMac ? (idx===0 ? '#d946ef' : '#8b5cf6') : (idx===0 ? '#3b82f6' : '#6b7280');
+                    ctx.stroke();
+                });
+            }
+
+            // LÍNEAS DIVISORIAS INTERNAS (Vecinos, Huérfanos, etc)
+            ctx.beginPath();
+            // Vecinos / Huerfanos Izq (entre 22 y 9) -> idx 28 y 27
+            let vo_L = getInnerEdge(27.5 / 37);
+            // Vecinos / Huerfanos Der (entre 25 y 17) -> idx 7 y 8
+            let vo_R = getInnerEdge(7.5 / 37);
+            ctx.moveTo(vo_L.x, vo_L.y); ctx.lineTo(vo_R.x, vo_R.y);
+            // Huerfanos / Tercio Izq (entre 1 y 33) -> idx 23 y 22
+            let ot_L = getInnerEdge(22.5 / 37);
+            // Huerfanos / Tercio Der (entre 6 y 27) -> idx 10 y 11
+            let ot_R = getInnerEdge(10.5 / 37);
+            ctx.moveTo(ot_L.x, ot_L.y); ctx.lineTo(ot_R.x, ot_R.y);
+            // Juego 0 límites interiores (entre 12/28 y 15/19)
+            let j0_L = getInnerEdge(32.5 / 37); let j0_R = getInnerEdge(2.5 / 37);
+            ctx.moveTo(j0_L.x, j0_L.y); ctx.lineTo(j0_R.x, j0_R.y);
+            
+            ctx.strokeStyle = '#374151'; ctx.lineWidth = 1 * pr; ctx.stroke();
+
+            // ZONAS DE TEXTO INTERIOR E HITBOXES
+            zonasHitboxes = [];
+            let txtX = cx, topY = cyTop - R + thick;
+            let yJuego = topY + (L*0.1), yVecinos = cyTop + (L*0.25), yHuerfanos = cyTop + (L*0.5), yTercio = cyBot - (L*0.1);
+            
+            zonasHitboxes.push({ id: 'JUEGO 0', x: txtX, y: yJuego, r: drawW * 0.15 });
+            zonasHitboxes.push({ id: 'VECINOS', x: txtX, y: yVecinos, r: drawW * 0.15 });
+            zonasHitboxes.push({ id: 'HUERFANOS', x: txtX, y: yHuerfanos, r: drawW * 0.15 });
+            zonasHitboxes.push({ id: 'TERCIO', x: txtX, y: yTercio, r: drawW * 0.15 });
+
+            zonasHitboxes.forEach(z => {
+                let isActive = (activeZ === z.id);
+                ctx.save();
+                ctx.translate(z.x, z.y);
+                if (orientacionPista === 'H') ctx.rotate(Math.PI/2);
+                
+                if (isActive) {
+                    ctx.beginPath(); ctx.arc(0, 0, z.r * (orientacionPista==='H'? 0.5 : 0.8), 0, 2*Math.PI);
+                    ctx.fillStyle = '#eab308'; ctx.globalAlpha = 0.2; ctx.fill(); ctx.globalAlpha = 1.0;
+                }
+                
+                ctx.fillStyle = isActive ? '#eab308' : '#6b7280';
+                ctx.shadowBlur = 0;
+                let fs = drawW * 0.04; if(z.id === 'HUERFANOS') fs = drawW * 0.035;
+                ctx.font = `bold ${fs}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(z.id, 0, 0);
+                ctx.restore();
+            });
+
+            if (orientacionPista === 'H') ctx.restore();
+        }
+
+        // TEXTO CENTRAL (SOLO PARA CILINDRO)
+        function dibujarHudCentro(ctx, cx, cy, r, pr, isMac) {
+            ctx.shadowBlur = 0;
+            if (isMac) {
+                ctx.fillStyle = '#a78bfa'; ctx.font = `bold ${r * 0.13}px sans-serif`; ctx.textAlign = 'center'; ctx.fillText("MODO", cx, cy - (r * 0.15));
+                ctx.fillStyle = '#ffffff'; ctx.font = `bold ${r * 0.22}px Arial`; ctx.fillText("MACRO", cx, cy + (r * 0.15));
+            } else {
+                if (historialTiradas.length > 0) {
+                    let ultObj = historialTiradas[historialTiradas.length - 1];
+                    let l = ultObj.num, d = ultObj.dir;
+                    ctx.fillStyle = '#6b7280'; ctx.font = `${r * 0.11}px sans-serif`; ctx.textAlign = 'center'; ctx.fillText("ÚLTIMO", cx, cy - (r * 0.2));
+                    ctx.fillStyle = l === 0 ? '#22c55e' : (ROJOS.includes(l) ? '#ef4444' : '#ffffff');
+                    ctx.font = `bold ${r * 0.35}px Arial`; ctx.fillText(l.toString(), cx, cy + (r * 0.05));
+                    ctx.fillStyle = d === direccionActualBola ? '#60a5fa' : '#9ca3af'; ctx.font = `bold ${r * 0.12}px sans-serif`; ctx.fillText(d==='CW'?'DIR: ↻':'DIR: ↺', cx, cy + (r * 0.25));
+                } else {
+                    ctx.fillStyle = '#4b5563'; ctx.font = `bold ${r * 0.13}px sans-serif`; ctx.textAlign = 'center'; ctx.fillText("SIN DATOS", cx, cy);
+                }
+            }
+        }
+
+        async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                }
+            }
+        }
+
+        async function solicitarAnalisisIA() {
+            const btn = document.getElementById('btn-ai-trigger');
+            const container = document.getElementById('ai-output-container');
+            const loading = document.getElementById('ai-loading');
+            const report = document.getElementById('ai-report');
+
+            // Validar que haya datos suficientes
+            if (modoActual === 'exacto' && historialTiradas.length < 12) {
+                container.classList.remove('hidden');
+                loading.classList.add('hidden');
+                report.innerHTML = `<span class="text-red-400">⚠️ La IA necesita al menos 12 tiradas en el Modo Exacto para calcular sesgos físicos fiables.</span>`;
+                return;
+            } else if (modoActual === 'macro' && document.getElementById('macro-results').classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                loading.classList.add('hidden');
+                report.innerHTML = `<span class="text-red-400">⚠️ Presiona "Analizar Intersecciones" en el modo Macro primero para generar los datos para la IA.</span>`;
+                return;
+            }
+
+            // Preparar UI para carga
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            container.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            report.innerHTML = '';
+
+            // Construir el prompt para Gemini basado en el contexto actual
+            let userQuery = "";
+            if (modoActual === 'exacto') {
+                const numsStr = historialTiradas.map(t => `${t.num}(${t.dir === 'CW'?'Der':'Izq'})`).join(', ');
+                const zonasStr = zonasCalientes.length > 0 ? zonasCalientes.map(z => `Centro ${z.centro} [${z.numeros.join(',')}]`).join(' | ') : "Sin tendencia clara";
+                
+                userQuery = `
+                    MODO: Análisis de Secuencia Exacta.
+                    PERFIL FÍSICO DE MESA: ${perfilFisicoExacto.tipo.toUpperCase()}, Crupier ${perfilFisicoExacto.sexo.toUpperCase()} ${perfilFisicoExacto.postura.toUpperCase()}.
+                    ÚLTIMAS TIRADAS (Antiguas -> Recientes): ${numsStr}.
+                    ZONAS TÉRMICAS CALCULADAS: ${zonasStr}.
+                    
+                    Analiza brevemente esta sesión. ¿Existe evidencia de una firma del crupier o sesgo de la rueda dadas las direcciones y biometría? ¿Qué táctica recomiendas?
+                `;
+            } else {
+                const topNums = [...estadisticasCalculadas].sort((a,b) => b.desviacion - a.desviacion).slice(0, 5).map(s => s.numero).join(', ');
+                const zonasStr = zonasCalientes.length > 0 ? zonasCalientes.map(z => `Centro ${z.centro}`).join(' y ') : "Ninguna";
+                
+                userQuery = `
+                    MODO: Análisis Estadístico Macro de Pantalla.
+                    PERFIL FÍSICO APLICADO: ${perfilFisicoMacro.tipo.toUpperCase()}, Crupier ${perfilFisicoMacro.sexo.toUpperCase()} ${perfilFisicoMacro.postura.toUpperCase()}.
+                    NÚMEROS CON MAYOR CALOR MATEMÁTICO: ${topNums}.
+                    ZONAS RECOMENDADAS: ${zonasStr}.
+                    
+                    Basado en las estadísticas de los clústeres y el perfil físico, proporciona una evaluación experta rápida. ¿Debería el jugador enfocarse en sectores, huérfanos, o evitar la mesa?
+                `;
+            }
+
+            const systemPrompt = `Eres un experto mundial de élite en balística de ruletas, entropía y firmas físicas de crupieres (dealer signatures). 
+                Analizas los datos como un profesional para encontrar patrones físicos reales, descartando la falacia del jugador. 
+                Tu respuesta debe ser directa, técnica pero comprensible, y estructurada en máximo 2 párrafos cortos. 
+                No saludes, ve directo al análisis y da una conclusión táctica. Usa lenguaje propio del casino. Formatea la respuesta con viñetas o negritas sutiles si es necesario para leer fácil, sin usar markdown complejo.`;
+
+            // === CAMBIO PARA TERMUX / WEBCODE ===
+            // Como correrás el backend en tu propio celular, apuntamos a localhost en el puerto 3000
+            const apiUrl = `http://localhost:3000/api/analyze`;
+
+            const payload = {
+                prompt: userQuery,
+                systemInstruction: systemPrompt
+            };
+
+            try {
+                const result = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (result && result.text) {
+                    let aiText = result.text;
+                    // Conversión básica de Markdown a HTML (Negritas y saltos de línea)
+                    aiText = aiText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                    report.innerHTML = aiText;
+                } else if (result && result.error) {
+                     report.innerHTML = `<span class="text-red-400">⚠️ Backend: ${result.error}</span>`;
+                } else {
+                    report.innerHTML = `<span class="text-red-400">Error: Respuesta inesperada del servidor.</span>`;
+                }
+            } catch (error) {
+                console.error("Error al llamar al backend:", error);
+                report.innerHTML = `<span class="text-red-400">⚠️ Error de conexión con el servidor privado. Revisa si el backend está encendido.</span>`;
+            } finally {
+                loading.classList.add('hidden');
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function abrirModalLegal() {
+            const modal = document.getElementById('modal-legal');
+            const content = document.getElementById('modal-legal-content');
+            modal.classList.remove('hidden');
+            // Timeout para permitir que el display:block se aplique antes de animar opacidad
+            setTimeout(() => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function cerrarModalLegal() {
+            const modal = document.getElementById('modal-legal');
+            const content = document.getElementById('modal-legal-content');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function aceptarTerminos() {
+            localStorage.setItem('legalAccepted', 'true');
+            const banner = document.getElementById('cookie-banner');
+            banner.classList.add('translate-y-full');
+            setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 500);
+        }
+
+        function comprobarTerminos() {
+            const accepted = localStorage.getItem('legalAccepted');
+            if (!accepted) {
+                const banner = document.getElementById('cookie-banner');
+                banner.classList.remove('hidden');
+                // Timeout para permitir la animación de subida
+                setTimeout(() => {
+                    banner.classList.remove('translate-y-full');
+                }, 100);
+            }
+        }
+
+        // Llamar comprobación al iniciar
+        document.addEventListener('DOMContentLoaded', comprobarTerminos);
+        // Fallback por si el DOM ya estaba listo
+        if(appInicializada) comprobarTerminos();
+    </script>
+</body>
+</html>
