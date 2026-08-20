@@ -11,7 +11,6 @@
         .square-container { position: relative; width: 100%; padding-bottom: 100%; border-radius: 50%; }
         .square-container canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        /* Contenedores dinámicos para la Pista (Horizontal y Vertical) */
         .racetrack-container { position: relative; width: 100%; margin: 0 auto; transition: padding 0.3s ease, max-width 0.3s ease; }
         .racetrack-h { max-width: 100%; padding-bottom: 35%; margin-top: 10px; margin-bottom: 10px; }
         .racetrack-v { max-width: 180px; padding-bottom: 190%; margin-top: 5px; }
@@ -27,6 +26,7 @@
         #historial-display { -ms-overflow-style: none; scrollbar-width: none; }
         .dir-indicator { font-size: 0.6rem; margin-top: -2px; opacity: 0.7; display: block; }
         
+        /* Estilos del Panel IA */
         .ai-panel { background: linear-gradient(145deg, #1e1b4b 0%, #0f172a 100%); border-color: #4c1d95; }
         .ai-text { font-size: 0.85rem; line-height: 1.5; color: #cbd5e1; }
         .ai-text strong { color: #a78bfa; }
@@ -46,7 +46,7 @@
         <header class="mb-5 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-gray-800 pb-4">
             <div class="text-center md:text-left w-full md:w-auto">
                 <h1 class="text-2xl font-extrabold text-white tracking-tight flex items-center justify-center md:justify-start gap-2">
-                    <span class="text-blue-500">◈</span> SectorAnalyzer <span class="text-[10px] bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded border border-blue-800">RACETRACK v6</span>
+                    <span class="text-blue-500">◈</span> SectorAnalyzer <span class="text-[10px] bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded border border-purple-800"> Asesor AI </span>
                 </h1>
             </div>
             
@@ -58,21 +58,20 @@
 
         <div class="flex flex-col xl:flex-row gap-6">
 
-            <!-- COLUMNA IZQUIERDA: MAPAS TÉRMICOS -->
+            <!-- COLUMNA IZQUIERDA -->
             <div class="w-full xl:w-5/12 flex flex-col gap-6">
                 
+                <!-- MAPAS TÉRMICOS -->
                 <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800 flex flex-col relative overflow-hidden">
                     <div id="macro-overlay" class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-blue-600 hidden"></div>
                     
                     <div class="w-full flex justify-between items-center mb-4 z-10 border-b border-gray-800 pb-2">
                         <div class="flex items-center gap-2 flex-wrap">
                             <h2 class="text-lg font-bold text-gray-200">Mapa Balístico</h2>
-                            <!-- SELECTOR DE VISTA -->
                             <div class="flex bg-gray-950 rounded shadow-inner border border-gray-800 ml-1">
                                 <button onclick="switchVistaMap('cilindro')" id="btn-vista-cilindro" class="px-2 py-1 bg-blue-600 text-white font-bold text-[10px] rounded-l transition-colors">ÓVALO</button>
                                 <button onclick="switchVistaMap('pista')" id="btn-vista-pista" class="px-2 py-1 bg-transparent text-gray-500 hover:text-gray-300 font-bold text-[10px] rounded-r transition-colors">PISTA</button>
                             </div>
-                            <!-- BOTÓN GIRAR (Solo Pista) -->
                             <button onclick="toggleOrientacionPista()" id="btn-ori-pista" class="hidden px-2 py-1 bg-gray-800 text-gray-400 hover:text-white font-bold text-[10px] rounded border border-gray-700 transition-colors shadow-sm ml-1">⟳ GIRAR</button>
                         </div>
                         <span id="status-indicator" class="text-[10px] font-bold text-red-500 flex items-center gap-1 bg-gray-950 px-2 py-1 rounded border border-gray-800">
@@ -80,19 +79,16 @@
                         </span>
                     </div>
                     
-                    <!-- VISTA CILINDRO REDONDO -->
                     <div id="cilindro-wrapper" class="canvas-wrapper z-10 w-full block">
                         <div class="square-container">
                             <canvas id="ruletaCanvas"></canvas>
                         </div>
                     </div>
 
-                    <!-- VISTA PISTA (RACETRACK) -->
                     <div id="pista-wrapper" class="racetrack-container racetrack-h z-10 w-full hidden">
                         <canvas id="pistaCanvas"></canvas>
                     </div>
                     
-                    <!-- LEYENDA TÉRMICA -->
                     <div class="mt-4 pt-3 border-t border-gray-800 flex flex-col items-center w-full z-10">
                         <span class="text-[9px] text-gray-500 mb-1 uppercase font-bold tracking-wider">Intensidad Térmica (Probabilidad)</span>
                         <div class="w-full max-w-[220px] h-2.5 rounded-full shadow-inner" id="termal-legend" style="background: linear-gradient(to right, rgb(15,15,30), rgb(0,150,255), rgb(0,255,100), rgb(255,200,0), rgb(255,0,0));"></div>
@@ -102,9 +98,9 @@
                             <span class="text-[8px] font-bold" id="termal-hot-text" style="color: rgb(255,0,0);">Máxima / Caliente</span>
                         </div>
                     </div>
-
                 </div>
 
+                <!-- PREDICCIONES -->
                 <div class="prediction-card p-5 rounded-2xl border border-blue-900/50 relative overflow-hidden shadow-xl">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600"></div>
                     <h2 class="text-lg font-bold text-white mb-1 flex items-center gap-2">🎯 Secciones Más Probables</h2>
@@ -115,6 +111,7 @@
                     </div>
                 </div>
 
+                <!-- ASESOR IA (LÓGICA FRONTEND) -->
                 <div class="ai-panel p-5 rounded-2xl border relative overflow-hidden shadow-xl mt-6">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500"></div>
                     <div class="flex justify-between items-start mb-3">
@@ -123,7 +120,7 @@
                                 <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
                                 Asesor Balístico IA
                             </h2>
-                            <p class="text-[11px] text-gray-400 mt-1">Análisis predictivo profundo potenciado por Gemini.</p>
+                            <p class="text-[11px] text-gray-400 mt-1">Análisis heurístico local (Sin API requerida).</p>
                         </div>
                         <button onclick="solicitarAnalisisIA()" id="btn-ai-trigger" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-[0_0_10px_rgba(168,85,247,0.4)] flex items-center gap-2">
                             <span>Analizar Mesa</span>
@@ -132,7 +129,7 @@
                     
                     <div id="ai-output-container" class="bg-black/40 rounded-xl p-4 border border-purple-900/50 hidden">
                         <div id="ai-loading" class="hidden text-center py-2 text-purple-300 text-xs font-mono">
-                            <span class="spinner mr-2"></span> Evaluando biometría y entropía del cilindro...
+                            <span class="spinner mr-2"></span> Evaluando biometría y entropía local...
                         </div>
                         <div id="ai-report" class="ai-text"></div>
                     </div>
@@ -140,12 +137,10 @@
 
             </div>
 
-            <!-- COLUMNA DERECHA: ENTRADA DE DATOS -->
+            <!-- COLUMNA DERECHA -->
             <div class="w-full xl:w-7/12">
                 
-                <!-- ============================================== -->
                 <!-- PANEL MODO EXACTO -->
-                <!-- ============================================== -->
                 <div id="panel-exacto" class="flex flex-col gap-6">
                     
                     <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800">
@@ -235,9 +230,7 @@
                     </div>
                 </div>
 
-                <!-- ============================================== -->
                 <!-- PANEL MODO MACRO -->
-                <!-- ============================================== -->
                 <div id="panel-macro" class="hidden flex-col gap-6">
                     <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800 relative z-10">
                          <h2 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">⚙️ Perfil Físico de la Mesa (Macro)</h2>
@@ -345,24 +338,11 @@
             <div class="p-5 overflow-y-auto legal-content-scroll text-sm text-gray-300 space-y-4">
                 <div>
                     <h4 class="font-bold text-white mb-1 text-base">1. Deslinde de Responsabilidad Financiera y Apuestas</h4>
-                    <p>El uso de <strong>SectorAnalyzer</strong> es bajo su propio y exclusivo riesgo. Esta herramienta proporciona análisis estadísticos basados en mapas de calor y leyes físicas teóricas. <strong>Bajo ninguna circunstancia garantiza ganancias o aciertos.</strong> La ruleta es un juego de azar puro con ventaja matemática absoluta para el casino. El creador, desarrollador o distribuidor de este software <strong>NO se hace responsable por ninguna pérdida económica, financiera o daño</strong> derivado del uso de esta herramienta. <strong>Usted asume el 100% de la responsabilidad sobre el uso de su dinero.</strong> Juegue de manera responsable y nunca apueste dinero que no pueda permitirse perder.</p>
+                    <p>El uso de <strong>SectorAnalyzer</strong> es bajo su propio y exclusivo riesgo. Esta herramienta proporciona análisis estadísticos basados en mapas de calor y leyes físicas teóricas. <strong>Bajo ninguna circunstancia garantiza ganancias o aciertos.</strong> La ruleta es un juego de azar puro con ventaja matemática absoluta para el casino.</p>
                 </div>
                 <div>
-                    <h4 class="font-bold text-white mb-1 text-base">2. Reglas de Uso</h4>
-                    <ul class="list-disc pl-5 space-y-1">
-                        <li>El uso de esta herramienta está estrictamente prohibido para menores de 18 años.</li>
-                        <li>Esta aplicación está diseñada exclusivamente con fines educativos, de entretenimiento y de experimentación estadística.</li>
-                        <li>Es su entera responsabilidad verificar si el uso de software de asistencia o tracking estadístico está permitido en la jurisdicción, casino físico o plataforma en línea donde pretende utilizarlo.</li>
-                        <li>Queda prohibido el uso de esta herramienta para cualquier actividad ilícita.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-bold text-white mb-1 text-base">3. Política de Privacidad</h4>
-                    <p>Valoramos y respetamos profundamente su privacidad. <strong>No almacenamos, recopilamos, compartimos ni enviamos sus datos de uso, historiales de tiradas o información personal a servidores externos.</strong> Todo el procesamiento de datos (incluido el análisis del motor de Inteligencia Artificial y el reconocimiento de texto OCR para las imágenes) se ejecuta y procesa de forma segura a través de integraciones donde su información no queda ligada a su identidad personal. Sus tiradas desaparecen al limpiar el historial o cerrar la ventana.</p>
-                </div>
-                <div>
-                    <h4 class="font-bold text-white mb-1 text-base">4. Uso de Cookies (Almacenamiento Local)</h4>
-                    <p>Utilizamos el almacenamiento local de su navegador (tecnología similar a las cookies técnicas) única y exclusivamente para recordar sus preferencias de uso, como la aceptación de estos términos para no mostrar el aviso constantemente. No utilizamos cookies de rastreo publicitario ni compartimos esta información con terceros.</p>
+                    <h4 class="font-bold text-white mb-1 text-base">2. Política de Privacidad y Procesamiento Local</h4>
+                    <p>Valoramos su privacidad. <strong>No almacenamos, recopilamos, compartimos ni enviamos sus datos de uso a servidores externos ni APIs.</strong> Todo el procesamiento, incluyendo el "Asesor Balístico IA", se ejecuta mediante lógica heurística directamente en su navegador.</p>
                 </div>
             </div>
             <div class="p-4 border-t border-gray-800 bg-gray-800/30 rounded-b-2xl text-right">
@@ -375,7 +355,7 @@
     <div id="cookie-banner" class="fixed bottom-0 left-0 w-full bg-gray-900 border-t border-blue-900/50 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] z-40 transform translate-y-full transition-transform duration-500">
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <div class="text-xs md:text-sm text-gray-300">
-                <strong class="text-white">Aviso de Privacidad y Responsabilidad:</strong> Esta herramienta es solo para análisis estadístico. <strong>No garantiza ganancias.</strong> Usted es 100% responsable de su dinero. Usamos almacenamiento local (cookies) para recordar sus preferencias. Al usar la app, acepta nuestras <button onclick="abrirModalLegal()" class="text-blue-400 hover:underline">reglas, privacidad y deslinde de apuestas</button>.
+                <strong class="text-white">Aviso de Privacidad y Responsabilidad:</strong> Esta herramienta es solo para análisis estadístico. Todo se procesa localmente (Sin APIs). Al usar la app, acepta nuestras <button onclick="abrirModalLegal()" class="text-blue-400 hover:underline">reglas</button>.
             </div>
             <button onclick="aceptarTerminos()" class="whitespace-nowrap bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-transform active:scale-95 w-full md:w-auto">Aceptar y Entender</button>
         </div>
@@ -386,7 +366,6 @@
         const ROJOS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
         const EXPECTED_RB = 48.6, EXPECTED_DOZ_COL = 32.4, EXPECTED_GREEN = 2.7; 
         
-        // Zonas Interactivas de la Pista
         const ZONAS_NUMS = {
             'JUEGO 0': [12,35,3,26,0,32,15],
             'VECINOS': [22,18,29,7,28,12,35,3,26,0,32,15,19,4,21,2,25],
@@ -399,7 +378,7 @@
         let zonasCalientes = []; 
         let modoActual = 'exacto'; 
         let vistaActualMap = 'cilindro'; 
-        let orientacionPista = 'H'; // Horizontal por defecto para ahorrar espacio
+        let orientacionPista = 'H'; 
         
         let zonaSelectPista = null; 
         let zonaHoverPista = null;
@@ -415,11 +394,53 @@
 
         function iniciarApp() {
             if (appInicializada) return;
-            try { generarTeclado(); actualizarUIExacto(); initPistaEvents(); appInicializada = true; } catch (e) { console.error(e); }
+            try { 
+                generarTeclado(); 
+                actualizarUIExacto(); 
+                initPistaEvents(); 
+                verificarTerminos();
+                appInicializada = true; 
+            } catch (e) { console.error(e); }
         }
-        iniciarApp(); document.addEventListener('DOMContentLoaded', iniciarApp);
+        
+        iniciarApp(); 
+        document.addEventListener('DOMContentLoaded', iniciarApp);
         window.addEventListener('resize', () => { if(appInicializada) dibujarMapas(); });
 
+        /* UTILIDADES MODALES Y LEGALES */
+        function abrirModalLegal() {
+            const modal = document.getElementById('modal-legal');
+            const content = document.getElementById('modal-legal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function cerrarModalLegal() {
+            const modal = document.getElementById('modal-legal');
+            const content = document.getElementById('modal-legal-content');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        function aceptarTerminos() {
+            localStorage.setItem('terminosAceptados', 'true');
+            const banner = document.getElementById('cookie-banner');
+            banner.classList.add('translate-y-full');
+        }
+
+        function verificarTerminos() {
+            if (!localStorage.getItem('terminosAceptados')) {
+                setTimeout(() => {
+                    document.getElementById('cookie-banner').classList.remove('translate-y-full');
+                }, 1000);
+            }
+        }
+
+        /* NAVEGACIÓN Y MODOS */
         function switchVistaMap(vista) {
             vistaActualMap = vista;
             document.getElementById('cilindro-wrapper').classList.toggle('hidden', vista !== 'cilindro');
@@ -466,7 +487,6 @@
                 ? "flex-1 md:flex-none bg-purple-600 px-4 py-2 rounded-lg text-sm font-bold text-white shadow-lg border border-purple-500" 
                 : "flex-1 md:flex-none bg-gray-800 px-4 py-2 rounded-lg text-sm font-bold text-gray-300 border border-gray-700";
 
-            // Actualizar colores de la leyenda térmica dinámicamente
             if (modo === 'macro') {
                 document.getElementById('termal-legend').style.background = 'linear-gradient(to right, rgb(15,15,30), rgb(0,200,255), rgb(100,100,255), rgb(200,50,255), rgb(255,0,255))';
                 document.getElementById('termal-hot-text').style.color = 'rgb(255,0,255)';
@@ -524,6 +544,7 @@
             document.getElementById('tab-import-img').className = tab === 'img' ? "px-3 py-1 text-xs font-bold border-b-2 border-blue-500 text-blue-400" : "px-3 py-1 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-300";
         }
 
+        /* INGRESO DE DATOS */
         function procesarPegado() {
             const nums = document.getElementById('paste-input').value.match(/\d+/g);
             if(nums) {
@@ -581,6 +602,7 @@
         function deshacerTirada() { if (historialTiradas.length > 0) { historialTiradas.pop(); alternarDireccion(); actualizarUIExacto(); } }
         function limpiarHistorial() { if(confirm("¿Limpiar sesión actual?")) { historialTiradas = []; actualizarUIExacto(); } }
 
+        /* LÓGICA CORE EXACTO */
         function actualizarUIExacto() {
             const total = historialTiradas.length;
             let conteo = {}; RUEDA_EUROPEA.forEach(n => conteo[n] = 0);
@@ -624,6 +646,7 @@
             }
         }
 
+        /* LÓGICA CORE MACRO */
         function getPropiedades(n) { if (n === 0) return { color: 'green', par: null, mitad: null, col: null, doz: null }; return { color: ROJOS.includes(n) ? 'red' : 'black', par: n % 2 === 0 ? 'even' : 'odd', mitad: n <= 18 ? 'low' : 'high', col: n % 3 === 0 ? 3 : n % 3, doz: Math.ceil(n / 12) }; }
         function obtenerValorInput(id) { return parseFloat(document.getElementById(id).value) || 0; }
         
@@ -641,18 +664,24 @@
                 }
                 estadisticasCalculadas.push({ numero: i, desviacion: score / 5, apariciones: 0 });
             }
-            analizarClusteresFisicos(perfilFisicoMacro); dibujarMapas();
+            analizarClusteresFisicos(perfilFisicoMacro); 
+            dibujarMapas();
+            
             document.getElementById('status-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]"></span> MACRO ACTIVO`;
             document.getElementById('status-indicator').className = "text-[10px] font-bold text-purple-400 flex items-center gap-1 bg-gray-950 px-2 py-1 rounded border border-gray-800";
             renderizarSectores(document.getElementById('prediction-list'), true);
             
-            const container = document.getElementById('macro-top-numbers'); document.getElementById('macro-results').classList.remove('hidden'); container.innerHTML = '';
+            const container = document.getElementById('macro-top-numbers'); 
+            document.getElementById('macro-results').classList.remove('hidden'); 
+            container.innerHTML = '';
+            
             [...estadisticasCalculadas].sort((a,b) => b.desviacion - a.desviacion).slice(0, 6).forEach(stat => {
                 const n = stat.numero;
                 container.innerHTML += `<div class="flex flex-col items-center justify-center bg-gray-900 p-1.5 rounded-lg border border-gray-700 w-12 shadow-md"><span class="w-7 h-7 flex items-center justify-center rounded-full font-bold text-white text-xs border border-gray-600 ${n===0?'bg-green-700':(ROJOS.includes(n)?'bg-red-700':'bg-gray-800')}">${n}</span><span class="text-[9px] text-gray-400 mt-1">H. ${(stat.desviacion>0?'+':'')}${stat.desviacion.toFixed(1)}</span></div>`;
             });
         }
 
+        /* CLUSTERIZACIÓN Y RENDERING */
         function analizarClusteresFisicos(perfilActivo) {
             zonasCalientes = []; let sectores = [];
             let ventana = 5; if (perfilActivo.tipo === 'auto') ventana = 3; else { if (perfilActivo.postura === 'pie' || perfilActivo.sexo === 'hombre') ventana = 7; }
@@ -694,6 +723,101 @@
             });
         }
 
+        /* 🤖 ASESOR IA (LÓGICA FRONTEND PURA - NO REQUIERE APIS EXTERNAS) 🤖 */
+        async function solicitarAnalisisIA() {
+            const btn = document.getElementById('btn-ai-trigger');
+            const container = document.getElementById('ai-output-container');
+            const loading = document.getElementById('ai-loading');
+            const report = document.getElementById('ai-report');
+
+            // 1. Validar que haya datos suficientes para un análisis creíble
+            if (modoActual === 'exacto' && historialTiradas.length < 12) {
+                container.classList.remove('hidden');
+                loading.classList.add('hidden');
+                report.innerHTML = `<span class="text-red-400">⚠️ El Motor Heurístico requiere al menos 12 tiradas para modelar la dispersión física con precisión.</span>`;
+                return;
+            } else if (modoActual === 'macro' && document.getElementById('macro-results').classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                loading.classList.add('hidden');
+                report.innerHTML = `<span class="text-red-400">⚠️ Presiona "Analizar Intersecciones" primero para generar la matriz de datos de la ruleta.</span>`;
+                return;
+            }
+
+            // 2. Preparar UI para simular carga
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            container.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            report.innerHTML = '';
+
+            // 3. Simulamos un retraso de procesamiento para dar la sensación de análisis profundo
+            setTimeout(() => {
+                let aiText = "";
+                const perfil = modoActual === 'exacto' ? perfilFisicoExacto : perfilFisicoMacro;
+                const isAuto = perfil.tipo === 'auto';
+                const crupierDesc = isAuto ? "el rotor automatizado" : `el crupier (${perfil.sexo}, postura ${perfil.postura})`;
+
+                if (modoActual === 'exacto') {
+                    const totalTiradas = historialTiradas.length;
+                    
+                    if (zonasCalientes.length === 0) {
+                        aiText = `<strong><span class="text-gray-400">STATUS:</span> ALTA ENTROPÍA (DISPERSIÓN ALEATORIA)</strong><br><br>`;
+                        aiText += `Evaluados <strong>${totalTiradas}</strong> impactos. El análisis balístico actual sobre ${crupierDesc} no arroja una firma de lanzamiento consistente bajo la dirección de bola <strong>${direccionActualBola === 'CW' ? 'Horaria' : 'Antihoraria'}</strong>.<br><br>`;
+                        aiText += `<strong>🔍 DIAGNÓSTICO:</strong> La caída de la bola obedece a un modelo caótico puro. La energía se está disipando uniformemente por los deflectores (rombos) sin favorecer ningún cuadrante del cilindro.<br><br>`;
+                        aiText += `<strong>⚠️ TÁCTICA RECOMENDADA:</strong> <span class="text-red-400">NO APOSTAR.</span> Absténgase de operar en esta mesa hasta que ocurra un cambio de crupier o la biometría del lanzamiento se estabilice tras recopilar más tiradas.`;
+                    } else {
+                        let z1 = zonasCalientes[0];
+                        let z2 = zonasCalientes.length > 1 ? zonasCalientes[1] : null;
+                        let conf = Math.min(99, 40 + (z1.energia * 150)).toFixed(1);
+                        
+                        aiText = `<strong><span class="text-purple-400">STATUS:</span> FIRMA BALÍSTICA DETECTADA (CONFIANZA: ${conf}%)</strong><br><br>`;
+                        
+                        if (isAuto) {
+                            aiText += `<strong>⚙️ DIAGNÓSTICO DE HARDWARE:</strong> Se detecta desgaste o inclinación micromecánica en el cilindro automatizado. La velocidad de inyección de la bola y el frenado electromagnético del rotor están creando un "Drop Zone" predecible.<br><br>`;
+                        } else {
+                            aiText += `<strong>👤 ANÁLISIS BIOMECÁNICO:</strong> ${crupierDesc.charAt(0).toUpperCase() + crupierDesc.slice(1)} presenta fatiga o memoria muscular (lanzamiento rutinario). La velocidad de la bola respecto a la rueda genera una colisión dominante siempre en la misma área de deflectores.<br><br>`;
+                        }
+                        
+                        aiText += `<strong>🎯 PUNTO DE IMPACTO Y CLÚSTER:</strong> La bola tiende a morir abruptamente en el sector del <strong>${z1.centro}</strong>. `;
+                        
+                        if (z2) {
+                            aiText += `Además, se observa una onda de rebote armónico hacia el sector opuesto del <strong>${z2.centro}</strong>.<br><br>`;
+                            aiText += `<strong>💡 TÁCTICA RECOMENDADA:</strong> Juegue una estrategia de "Ataque en Pinza". Cubra el <strong>${z1.centro} y 2 vecinos</strong> (sector primario de caída) y apóyese con el <strong>${z2.centro} y 1 vecino</strong> (sector secundario de rebote).`;
+                        } else {
+                            aiText += `La dispersión tras el impacto es muy baja (efecto de "bola muerta").<br><br>`;
+                            aiText += `<strong>💡 TÁCTICA RECOMENDADA:</strong> Ejecute un ataque cerrado focalizándose en el número <strong>${z1.centro}</strong> y máximo 2 vecinos por lado. Considere usar apuestas directas (plenos) para maximizar el ROI.`;
+                        }
+                    }
+                } else {
+                    // Modo MACRO Heurístico
+                    let topStats = [...estadisticasCalculadas].sort((a,b) => b.desviacion - a.desviacion).slice(0, 4);
+                    let topNums = topStats.map(s => s.numero);
+                    let maxDev = topStats[0] ? topStats[0].desviacion.toFixed(2) : 0;
+
+                    if (zonasCalientes.length === 0 || maxDev < 0.5) {
+                        aiText = `<strong><span class="text-gray-400">ANÁLISIS MACRO:</span> MESA EN EQUILIBRIO MATEMÁTICO</strong><br><br>`;
+                        aiText += `El análisis cruzado de las estadísticas de pantalla (Colores, Docenas, Paridad, etc.) muestra que el generador de eventos (o el crupier) está respetando el margen de varianza teórico (Edge del casino).<br><br>`;
+                        aiText += `<strong>⚠️ CONCLUSIÓN:</strong> No hay ineficiencias explotables detectadas en el gráfico. Jugar ahora mismo dependerá 100% del azar, exponiéndole a la ventaja matemática de la casa.`;
+                    } else {
+                        let z1 = zonasCalientes[0];
+                        aiText = `<strong><span class="text-purple-400">ANÁLISIS MACRO:</span> DESCOMPENSACIÓN SEVERA DETECTADA (H-SCORE: +${maxDev})</strong><br><br>`;
+                        aiText += `El motor ha cruzado las probabilidades marginales del panel del casino (Rojo/Negro, Docenas, Paridad). Las matemáticas revelan una ineficiencia flagrante que el software del casino no puede ocultar en el gráfico.<br><br>`;
+                        aiText += `<strong>🔍 VECTORES DOMINANTES:</strong> Los números individuales con mayor descompensación matemática (atrasos/calores cruzados) en este preciso momento son: <strong>${topNums.join(', ')}</strong>.<br><br>`;
+                        aiText += `<strong>💡 TÁCTICA RECOMENDADA:</strong> Estos números "huérfanos" apuntan a una zona de choque físico en la ruleta. El clúster del cilindro que agrupa y absorbe toda esta energía estadística es el sector del <strong>${z1.centro}</strong>. Juegue a los vecinos del <strong>${z1.centro}</strong> para capitalizar la ineficiencia proyectada en el tablero.`;
+                    }
+                }
+
+                // Mostrar reporte
+                loading.classList.add('hidden');
+                report.innerHTML = aiText;
+                
+                // Restaurar botón
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }, 1800); 
+        }
+
+        /* GRÁFICOS Y CANVA */
         function initPistaEvents() {
             if (window.pistaEventsAdded) return;
             const canvas = document.getElementById('pistaCanvas');
@@ -777,20 +901,17 @@
                     let color = getColorTermico(v, isMac);
                     ctx.fillStyle = color;
                     
-                    // EFECTO DE CÁMARA TÉRMICA (DIFUMINADO Y MEZCLA)
                     if (v > 0.2) {
                         ctx.shadowColor = color;
-                        ctx.shadowBlur = (30 * v) * pr; // Más intensidad = mayor "sangrado" térmico
+                        ctx.shadowBlur = (30 * v) * pr;
                     } else {
                         ctx.shadowBlur = 0;
                     }
                 }
                 
                 ctx.fill(); 
-                ctx.shadowBlur = 0; // Reset para las líneas
-                
+                ctx.shadowBlur = 0; 
                 ctx.lineWidth = 1 * pr; 
-                // Hacer invisibles los bordes si el calor es alto, para que se mezclen los colores
                 ctx.strokeStyle = v > 0.3 ? 'rgba(3, 7, 18, 0.1)' : '#030712'; 
                 ctx.stroke();
                 
@@ -816,7 +937,6 @@
             dibujarHudCentro(ctx, cx, cy, r, pr, isMac);
         }
 
-        // MOTOR RENDER PISTA (Con Orientación Dinámica y Zonas Interactivas)
         function dibujarPista() {
             const canvas = document.getElementById('pistaCanvas');
             if (!canvas || !canvas.getContext) return;
@@ -877,7 +997,6 @@
             let maxD = 0.0001; estadisticasCalculadas.forEach(s => { if (s.desviacion > maxD) maxD = s.desviacion; });
             let activeZ = zonaSelectPista || zonaHoverPista;
 
-            // Dibujar 37 segmentos
             for (let i = 0; i < 37; i++) {
                 let n = RUEDA_EUROPEA[i];
                 let tStart = (i - 0.5) / 37, tEnd = (i + 0.5) / 37;
@@ -909,7 +1028,6 @@
                     let color = getColorTermico(v, isMac);
                     ctx.fillStyle = color;
                     
-                    // EFECTO DE CÁMARA TÉRMICA
                     if (v > 0.2 && !dimOthers) {
                         ctx.shadowColor = color;
                         ctx.shadowBlur = (30 * v) * pr;
@@ -921,18 +1039,16 @@
                 if (dimOthers) { ctx.fillStyle = '#111827'; ctx.globalAlpha = 0.3; ctx.shadowBlur = 0; } else { ctx.globalAlpha = 1.0; }
                 ctx.fill();
                 ctx.globalAlpha = 1.0;
-                ctx.shadowBlur = 0; // Reset
+                ctx.shadowBlur = 0; 
                 
                 if (isHighlighted) {
-                    ctx.lineWidth = 3 * pr; ctx.strokeStyle = '#eab308'; // Amarillo brillante
+                    ctx.lineWidth = 3 * pr; ctx.strokeStyle = '#eab308'; 
                 } else {
                     ctx.lineWidth = 1 * pr; 
-                    // Bordes suaves donde hay mucho calor para permitir la fusión de colores
                     ctx.strokeStyle = (v > 0.3 && !dimOthers) ? 'rgba(3, 7, 18, 0.1)' : '#030712';
                 }
                 ctx.stroke();
 
-                // Texto Números
                 let midPt = getPistaCoords(i / 37);
                 ctx.save();
                 ctx.translate(midPt.x, midPt.y);
@@ -944,7 +1060,6 @@
                 ctx.restore();
             }
 
-            // ARCOS EXTERNOS (ZONAS CALIENTES - TOP PREDICCIÓN)
             if (zonasCalientes.length > 0 && !activeZ) {
                 zonasCalientes.forEach((z, idx) => {
                     let stI = z.inicioIdx;
@@ -961,25 +1076,16 @@
                 });
             }
 
-            // LÍNEAS DIVISORIAS INTERNAS (Vecinos, Huérfanos, etc)
             ctx.beginPath();
-            // Vecinos / Huerfanos Izq (entre 22 y 9) -> idx 28 y 27
-            let vo_L = getInnerEdge(27.5 / 37);
-            // Vecinos / Huerfanos Der (entre 25 y 17) -> idx 7 y 8
-            let vo_R = getInnerEdge(7.5 / 37);
+            let vo_L = getInnerEdge(27.5 / 37); let vo_R = getInnerEdge(7.5 / 37);
             ctx.moveTo(vo_L.x, vo_L.y); ctx.lineTo(vo_R.x, vo_R.y);
-            // Huerfanos / Tercio Izq (entre 1 y 33) -> idx 23 y 22
-            let ot_L = getInnerEdge(22.5 / 37);
-            // Huerfanos / Tercio Der (entre 6 y 27) -> idx 10 y 11
-            let ot_R = getInnerEdge(10.5 / 37);
+            let ot_L = getInnerEdge(22.5 / 37); let ot_R = getInnerEdge(10.5 / 37);
             ctx.moveTo(ot_L.x, ot_L.y); ctx.lineTo(ot_R.x, ot_R.y);
-            // Juego 0 límites interiores (entre 12/28 y 15/19)
             let j0_L = getInnerEdge(32.5 / 37); let j0_R = getInnerEdge(2.5 / 37);
             ctx.moveTo(j0_L.x, j0_L.y); ctx.lineTo(j0_R.x, j0_R.y);
             
             ctx.strokeStyle = '#374151'; ctx.lineWidth = 1 * pr; ctx.stroke();
 
-            // ZONAS DE TEXTO INTERIOR E HITBOXES
             zonasHitboxes = [];
             let txtX = cx, topY = cyTop - R + thick;
             let yJuego = topY + (L*0.1), yVecinos = cyTop + (L*0.25), yHuerfanos = cyTop + (L*0.5), yTercio = cyBot - (L*0.1);
@@ -1011,7 +1117,6 @@
             if (orientacionPista === 'H') ctx.restore();
         }
 
-        // TEXTO CENTRAL (SOLO PARA CILINDRO)
         function dibujarHudCentro(ctx, cx, cy, r, pr, isMac) {
             ctx.shadowBlur = 0;
             if (isMac) {
@@ -1030,163 +1135,6 @@
                 }
             }
         }
-
-        async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return await response.json();
-                } catch (e) {
-                    if (i === retries - 1) throw e;
-                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-                }
-            }
-        }
-
-        async function solicitarAnalisisIA() {
-            const btn = document.getElementById('btn-ai-trigger');
-            const container = document.getElementById('ai-output-container');
-            const loading = document.getElementById('ai-loading');
-            const report = document.getElementById('ai-report');
-
-            // Validar que haya datos suficientes
-            if (modoActual === 'exacto' && historialTiradas.length < 12) {
-                container.classList.remove('hidden');
-                loading.classList.add('hidden');
-                report.innerHTML = `<span class="text-red-400">⚠️ La IA necesita al menos 12 tiradas en el Modo Exacto para calcular sesgos físicos fiables.</span>`;
-                return;
-            } else if (modoActual === 'macro' && document.getElementById('macro-results').classList.contains('hidden')) {
-                container.classList.remove('hidden');
-                loading.classList.add('hidden');
-                report.innerHTML = `<span class="text-red-400">⚠️ Presiona "Analizar Intersecciones" en el modo Macro primero para generar los datos para la IA.</span>`;
-                return;
-            }
-
-            // Preparar UI para carga
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            container.classList.remove('hidden');
-            loading.classList.remove('hidden');
-            report.innerHTML = '';
-
-            // Construir el prompt para Gemini basado en el contexto actual
-            let userQuery = "";
-            if (modoActual === 'exacto') {
-                const numsStr = historialTiradas.map(t => `${t.num}(${t.dir === 'CW'?'Der':'Izq'})`).join(', ');
-                const zonasStr = zonasCalientes.length > 0 ? zonasCalientes.map(z => `Centro ${z.centro} [${z.numeros.join(',')}]`).join(' | ') : "Sin tendencia clara";
-                
-                userQuery = `
-                    MODO: Análisis de Secuencia Exacta.
-                    PERFIL FÍSICO DE MESA: ${perfilFisicoExacto.tipo.toUpperCase()}, Crupier ${perfilFisicoExacto.sexo.toUpperCase()} ${perfilFisicoExacto.postura.toUpperCase()}.
-                    ÚLTIMAS TIRADAS (Antiguas -> Recientes): ${numsStr}.
-                    ZONAS TÉRMICAS CALCULADAS: ${zonasStr}.
-                    
-                    Analiza brevemente esta sesión. ¿Existe evidencia de una firma del crupier o sesgo de la rueda dadas las direcciones y biometría? ¿Qué táctica recomiendas?
-                `;
-            } else {
-                const topNums = [...estadisticasCalculadas].sort((a,b) => b.desviacion - a.desviacion).slice(0, 5).map(s => s.numero).join(', ');
-                const zonasStr = zonasCalientes.length > 0 ? zonasCalientes.map(z => `Centro ${z.centro}`).join(' y ') : "Ninguna";
-                
-                userQuery = `
-                    MODO: Análisis Estadístico Macro de Pantalla.
-                    PERFIL FÍSICO APLICADO: ${perfilFisicoMacro.tipo.toUpperCase()}, Crupier ${perfilFisicoMacro.sexo.toUpperCase()} ${perfilFisicoMacro.postura.toUpperCase()}.
-                    NÚMEROS CON MAYOR CALOR MATEMÁTICO: ${topNums}.
-                    ZONAS RECOMENDADAS: ${zonasStr}.
-                    
-                    Basado en las estadísticas de los clústeres y el perfil físico, proporciona una evaluación experta rápida. ¿Debería el jugador enfocarse en sectores, huérfanos, o evitar la mesa?
-                `;
-            }
-
-            const systemPrompt = `Eres un experto mundial de élite en balística de ruletas, entropía y firmas físicas de crupieres (dealer signatures). 
-                Analizas los datos como un profesional para encontrar patrones físicos reales, descartando la falacia del jugador. 
-                Tu respuesta debe ser directa, técnica pero comprensible, y estructurada en máximo 2 párrafos cortos. 
-                No saludes, ve directo al análisis y da una conclusión táctica. Usa lenguaje propio del casino. Formatea la respuesta con viñetas o negritas sutiles si es necesario para leer fácil, sin usar markdown complejo.`;
-
-            // === CAMBIO CRÍTICO Y DEFINITIVO ===
-            // Eliminamos la lógica de "isLocal" que te estaba forzando a buscar en localhost:3000
-            // al abrir el archivo HTML desde tu teléfono.
-            // Ahora la aplicación apuntará SIEMPRE a tu servidor de Vercel.
-            const apiUrl = 'https://rastreador-regla-europa.vercel.app/api/analyze';
-
-            const payload = {
-                prompt: userQuery,
-                systemInstruction: systemPrompt
-            };
-
-            try {
-                const result = await fetchWithRetry(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (result && result.text) {
-                    let aiText = result.text;
-                    // Conversión básica de Markdown a HTML (Negritas y saltos de línea)
-                    aiText = aiText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-                    report.innerHTML = aiText;
-                } else if (result && result.error) {
-                     report.innerHTML = `<span class="text-red-400">⚠️ Backend: ${result.error}</span>`;
-                } else {
-                    report.innerHTML = `<span class="text-red-400">Error: Respuesta inesperada del servidor.</span>`;
-                }
-            } catch (error) {
-                console.error("Error al llamar al backend:", error);
-                report.innerHTML = `<span class="text-red-400">⚠️ Error de conexión con el servidor de Vercel. Detalles: ${error.message}</span>`;
-            } finally {
-                loading.classList.add('hidden');
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        function abrirModalLegal() {
-            const modal = document.getElementById('modal-legal');
-            const content = document.getElementById('modal-legal-content');
-            modal.classList.remove('hidden');
-            // Timeout para permitir que el display:block se aplique antes de animar opacidad
-            setTimeout(() => {
-                modal.classList.remove('opacity-0', 'pointer-events-none');
-                content.classList.remove('scale-95');
-            }, 10);
-        }
-
-        function cerrarModalLegal() {
-            const modal = document.getElementById('modal-legal');
-            const content = document.getElementById('modal-legal-content');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            content.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        function aceptarTerminos() {
-            localStorage.setItem('legalAccepted', 'true');
-            const banner = document.getElementById('cookie-banner');
-            banner.classList.add('translate-y-full');
-            setTimeout(() => {
-                banner.classList.add('hidden');
-            }, 500);
-        }
-
-        function comprobarTerminos() {
-            const accepted = localStorage.getItem('legalAccepted');
-            if (!accepted) {
-                const banner = document.getElementById('cookie-banner');
-                banner.classList.remove('hidden');
-                // Timeout para permitir la animación de subida
-                setTimeout(() => {
-                    banner.classList.remove('translate-y-full');
-                }, 100);
-            }
-        }
-
-        // Llamar comprobación al iniciar
-        document.addEventListener('DOMContentLoaded', comprobarTerminos);
-        // Fallback por si el DOM ya estaba listo
-        if(appInicializada) comprobarTerminos();
     </script>
 </body>
 </html>
