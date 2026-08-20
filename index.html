@@ -1103,9 +1103,11 @@
                 Tu respuesta debe ser directa, técnica pero comprensible, y estructurada en máximo 2 párrafos cortos. 
                 No saludes, ve directo al análisis y da una conclusión táctica. Usa lenguaje propio del casino. Formatea la respuesta con viñetas o negritas sutiles si es necesario para leer fácil, sin usar markdown complejo.`;
 
-            // === CAMBIO PARA TERMUX / WEBCODE ===
-            // Como correrás el backend en tu propio celular, apuntamos a localhost en el puerto 3000
-            const apiUrl = `http://localhost:3000/api/analyze`;
+            // === CAMBIO CRÍTICO Y DEFINITIVO ===
+            // Eliminamos la lógica de "isLocal" que te estaba forzando a buscar en localhost:3000
+            // al abrir el archivo HTML desde tu teléfono.
+            // Ahora la aplicación apuntará SIEMPRE a tu servidor de Vercel.
+            const apiUrl = 'https://rastreador-regla-europa.vercel.app/api/analyze';
 
             const payload = {
                 prompt: userQuery,
@@ -1131,7 +1133,7 @@
                 }
             } catch (error) {
                 console.error("Error al llamar al backend:", error);
-                report.innerHTML = `<span class="text-red-400">⚠️ Error de conexión con el servidor privado. Revisa si el backend está encendido.</span>`;
+                report.innerHTML = `<span class="text-red-400">⚠️ Error de conexión con el servidor de Vercel. Detalles: ${error.message}</span>`;
             } finally {
                 loading.classList.add('hidden');
                 btn.disabled = false;
