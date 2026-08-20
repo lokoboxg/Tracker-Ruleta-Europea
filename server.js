@@ -39,8 +39,9 @@ app.post('/api/analyze', async (req, res) => {
         }
 
         // Configurar el modelo
+        // CORRECCIÓN: Usamos gemini-1.5-flash, que es el identificador de API público más estable
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-3.0-flash", // Usamos el modelo estable
+            model: "gemini-1.5-flash", 
             systemInstruction: systemInstruction 
         });
 
@@ -54,7 +55,7 @@ app.post('/api/analyze', async (req, res) => {
 
     } catch (error) {
         console.error('Error en el servidor:', error);
-        res.status(500).json({ error: 'Error procesando la solicitud en el servidor.' });
+        res.status(500).json({ error: 'Error procesando la solicitud en el servidor. Verifica tu API Key o el modelo.' });
     }
 });
 
@@ -68,4 +69,3 @@ if (process.env.NODE_ENV !== 'production') {
 
 // CRÍTICO PARA VERCEL: Exportar la app para que funcione como Serverless Function
 module.exports = app;
-
