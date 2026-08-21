@@ -33,15 +33,63 @@
         .spinner { border: 2px solid rgba(255, 255, 255, 0.1); border-left-color: #a78bfa; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .legal-modal-overlay { background-color: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 50; }
-        .legal-content-scroll::-webkit-scrollbar { width: 6px; }
-        .legal-content-scroll::-webkit-scrollbar-track { background: #111827; }
-        .legal-content-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        /* Muro Legal (Hard Block) */
+        .hard-block-overlay { background-color: #030712; z-index: 9999; backdrop-filter: blur(10px); }
+        .neon-border-blue { box-shadow: 0 0 25px rgba(59, 130, 246, 0.5), inset 0 0 15px rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; }
+        .neon-border-purple { box-shadow: 0 0 25px rgba(168, 85, 247, 0.5), inset 0 0 15px rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; }
+        .neon-text-glow { text-shadow: 0 0 10px currentColor; }
+
+        /* Tutorial Overlay */
+        .tutorial-overlay { z-index: 9000; background-color: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
+        .tut-card { animation: slideUpFade 0.4s ease forwards; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Blur Content when Blocked */
+        body.is-blocked { overflow: hidden; }
+        body.is-blocked .main-content-wrapper { filter: blur(8px); pointer-events: none; user-select: none; }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen p-3 md:p-6 font-sans select-none">
+<body class="bg-gray-950 text-gray-100 min-h-screen p-3 md:p-6 font-sans select-none is-blocked">
 
-    <div class="max-w-7xl mx-auto">
+    <!-- MURO LEGAL DE ACCESO (HARD BLOCK) -->
+    <div id="muro-legal" class="fixed inset-0 hard-block-overlay flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+        <div class="bg-gray-900/90 rounded-2xl neon-border-blue max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-blue-900/50 flex flex-col items-center text-center bg-blue-950/30">
+                <h1 class="text-3xl font-extrabold text-white mb-2 neon-text-glow text-blue-400">⚠️ ADVERTENCIA LEGAL</h1>
+                <p class="text-sm text-blue-200">Términos de Uso, Privacidad y Cookies</p>
+            </div>
+            
+            <div class="p-6 overflow-y-auto text-sm text-gray-300 space-y-5" style="max-height: 50vh;">
+                <div>
+                    <h4 class="font-bold text-white text-base mb-1 flex items-center gap-2">🛑 1. Deslinde de Responsabilidad Financiera</h4>
+                    <p>El uso de <strong>SectorAnalyzer PRO</strong> es estrictamente bajo su propio riesgo. Esta plataforma provee herramientas matemáticas y visuales (mapas de calor) basadas en leyes físicas teóricas de la ruleta. <strong>NO asegura, garantiza, ni promete ganancias monetarias o éxito en apuestas reales.</strong> La ruleta posee una ventaja matemática inamovible (edge) a favor del casino. El desarrollador se deslinda categóricamente de cualquier pérdida financiera, sanción, o daño derivado del uso de esta herramienta.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white text-base mb-1 flex items-center gap-2">🛡️ 2. Privacidad y Seguridad (Cero Servidores)</h4>
+                    <p>La seguridad de sus datos es primordial para evitar bloqueos (baneos) por parte de operadores de casino. Por ello, <strong>esta aplicación procesa todo el código de manera 100% LOCAL en su navegador.</strong> No usamos APIs, no enviamos sus datos de sesión, ni guardamos imágenes. Sus estrategias son invisibles para terceros.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white text-base mb-1 flex items-center gap-2">🍪 3. Uso de Cookies Técnicas</h4>
+                    <p>Utilizamos cookies y almacenamiento local (LocalStorage) única y exclusivamente para guardar sus preferencias de entorno visual y asegurar que no vuelva a ver este mensaje repetidamente. No existe rastreo publicitario. Al continuar, usted acepta este almacenamiento técnico obligatorio para el uso de la web.</p>
+                </div>
+            </div>
+            
+            <div class="p-5 border-t border-blue-900/50 bg-gray-900 flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="rechazarTerminos()" class="px-6 py-3 bg-transparent border-2 border-red-600 text-red-500 hover:bg-red-950/30 font-bold rounded-xl transition-colors">NO ESTOY DE ACUERDO</button>
+                <button onclick="aceptarTerminos()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.6)] transition-transform active:scale-95">HE LEÍDO Y ACEPTO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TUTORIAL NEON (OCULTO INICIALMENTE) -->
+    <div id="tutorial-overlay" class="fixed inset-0 tutorial-overlay hidden flex-col items-center justify-center p-4">
+        <div id="tut-content" class="w-full max-w-lg relative">
+            <!-- El contenido dinámico del tutorial irá aquí -->
+        </div>
+    </div>
+
+    <!-- WRAPPER PRINCIPAL (Se difumina si no se aceptan términos) -->
+    <div class="max-w-7xl mx-auto main-content-wrapper">
         
         <header class="mb-5 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-gray-800 pb-4">
             <div class="text-center md:text-left w-full md:w-auto">
@@ -51,6 +99,9 @@
             </div>
             
             <div class="flex gap-2 w-full md:w-auto justify-center">
+                <button onclick="abrirTutorial()" class="bg-gray-900 border border-green-500/50 text-green-400 px-3 py-2 rounded-lg text-xs font-bold hover:bg-green-900/20 shadow-[0_0_10px_rgba(34,197,94,0.2)] transition-all flex items-center gap-1">
+                    💡 CÓMO USAR
+                </button>
                 <button onclick="cambiarModo('exacto')" id="btn-modo-exacto" class="flex-1 md:flex-none bg-blue-600 px-4 py-2 rounded-lg text-sm font-bold text-white shadow-lg border border-blue-500">Modo Tiradas</button>
                 <button onclick="cambiarModo('macro')" id="btn-modo-macro" class="flex-1 md:flex-none bg-gray-800 px-4 py-2 rounded-lg text-sm font-bold text-gray-300 border border-gray-700">Modo Gráficos</button>
             </div>
@@ -104,7 +155,7 @@
                 <div class="prediction-card p-5 rounded-2xl border border-blue-900/50 relative overflow-hidden shadow-xl">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600"></div>
                     <h2 class="text-lg font-bold text-white mb-1 flex items-center gap-2">🎯 Secciones Más Probables</h2>
-                    <p class="text-[11px] text-gray-400 mb-4">Calculado usando mapa de calor, biometría del crupier y dirección de la bola.</p>
+                    <p class="text-[11px] text-gray-400 mb-4">Calculado usando mapa de calor, biometría y cálculos direccionales.</p>
                     
                     <div id="prediction-panel">
                         <div class="grid grid-cols-1 gap-3" id="prediction-list"></div>
@@ -233,14 +284,14 @@
                 <!-- PANEL MODO MACRO -->
                 <div id="panel-macro" class="hidden flex-col gap-6">
                     <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800 relative z-10">
-                         <h2 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">⚙️ Perfil Físico de la Mesa (Macro)</h2>
-                         <p class="text-[10px] text-gray-400 mb-3">Ajusta el tamaño del clúster físico al analizar los porcentajes del gráfico.</p>
-                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                         <h2 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">⚙️ Perfil Físico y Dirección (Macro)</h2>
+                         <p class="text-[10px] text-gray-400 mb-3">Ajusta la configuración. La dirección del último giro impacta el cálculo de Momentum de la bola.</p>
+                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                             <div class="bg-gray-950 p-2 rounded border border-gray-700">
                                 <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Tipo de Ruleta</label>
                                 <div class="flex flex-wrap gap-1">
                                     <button onclick="setPerfilMacro('tipo', 'manual')" id="pfm-tipo-manual" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-purple-600 text-white font-bold transition-colors">Manual</button>
-                                    <button onclick="setPerfilMacro('tipo', 'auto')" id="pfm-tipo-auto" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Automática</button>
+                                    <button onclick="setPerfilMacro('tipo', 'auto')" id="pfm-tipo-auto" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Autom</button>
                                 </div>
                             </div>
                             <div class="bg-gray-950 p-2 rounded border border-gray-700 pfm-manual-only">
@@ -253,8 +304,15 @@
                             <div class="bg-gray-950 p-2 rounded border border-gray-700 pfm-manual-only">
                                 <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Postura</label>
                                 <div class="flex flex-wrap gap-1">
-                                    <button onclick="setPerfilMacro('postura', 'pie')" id="pfm-postura-pie" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-purple-600 text-white font-bold transition-colors">De Pie</button>
-                                    <button onclick="setPerfilMacro('postura', 'sentado')" id="pfm-postura-sentado" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Sentado</button>
+                                    <button onclick="setPerfilMacro('postura', 'pie')" id="pfm-postura-pie" class="flex-1 text-xs py-1 rounded border border-gray-600 bg-purple-600 text-white font-bold transition-colors">Pie</button>
+                                    <button onclick="setPerfilMacro('postura', 'sentado')" id="pfm-postura-sentado" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">Senta</button>
+                                </div>
+                            </div>
+                            <div class="bg-gray-950 p-2 rounded border border-blue-900/50">
+                                <label class="text-[10px] text-blue-300 block mb-1 uppercase text-center font-bold">Último Giro</label>
+                                <div class="flex flex-wrap gap-1">
+                                    <button onclick="setDirMacro('CW')" id="mac-dir-cw" class="flex-1 text-xs py-1 rounded border border-blue-500 bg-blue-600 text-white font-bold transition-colors">↻ Der</button>
+                                    <button onclick="setDirMacro('CCW')" id="mac-dir-ccw" class="flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors">↺ Izq</button>
                                 </div>
                             </div>
                         </div>
@@ -263,7 +321,22 @@
                     <div class="bg-gray-900 p-5 rounded-2xl shadow-xl border border-blue-900/50 relative">
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-2xl"></div>
                         <h2 class="text-lg font-bold text-white mb-2">📊 Datos del Gráfico del Casino</h2>
-                        <p class="text-[11px] text-gray-400 mb-5 border-b border-gray-800 pb-3">Ingresa los porcentajes tal cual aparecen en la pantalla del casino.</p>
+                        <p class="text-[11px] text-gray-400 mb-5 border-b border-gray-800 pb-3">Ingresa los porcentajes del casino manualmente o captura una imagen.</p>
+
+                        <!-- OCR para Gráficos -->
+                        <div class="bg-gray-950 p-3 rounded-xl border border-gray-700 mb-5">
+                            <h3 class="text-[11px] font-bold text-blue-400 mb-2 uppercase flex items-center gap-1">
+                                📸 Captura Inteligente (OCR)
+                            </h3>
+                            <p class="text-[9px] text-gray-500 mb-2">Sube un screenshot claro de las estadísticas. El sistema buscará porcentajes y los auto-completará (Rojo, Negro, Cero, Par, Impar, etc.).</p>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input type="file" id="macro-image-upload" accept="image/*" class="block w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:font-semibold file:bg-purple-900 file:text-purple-200">
+                                <button onclick="procesarImagenMacro()" id="btn-ocr-macro" class="w-full sm:w-auto bg-purple-700 hover:bg-purple-600 text-white font-bold py-1.5 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors">
+                                    Escanear
+                                </button>
+                            </div>
+                            <div id="ocr-status-macro" class="hidden mt-2 bg-gray-900 p-2 rounded border border-gray-700 text-xs font-mono text-gray-400 text-center"></div>
+                        </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                             <div class="bg-gray-950 p-3 rounded-xl border border-gray-800">
@@ -318,50 +391,15 @@
             </div>
         </div>
 
-        <footer class="mt-8 pt-4 border-t border-gray-800 text-center pb-24 md:pb-4">
+        <footer class="mt-8 pt-4 border-t border-gray-800 text-center pb-8">
             <p class="text-xs text-gray-500">
-                &copy; 2026 SectorAnalyzer. Herramienta de análisis predictivo. <br class="md:hidden">
-                <button onclick="abrirModalLegal()" class="text-blue-400 hover:text-blue-300 underline mt-1 md:mt-0 md:ml-2 transition-colors">Ver Reglas, Privacidad y Deslinde de Responsabilidad</button>
+                &copy; 2026 SectorAnalyzer. Herramienta de análisis predictivo puramente matemático y estadístico. No garantizamos ganancias.
             </p>
         </footer>
     </div>
 
-    <!-- Modal Legal -->
-    <div id="modal-legal" class="fixed inset-0 legal-modal-overlay flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0 pointer-events-none">
-        <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col transform scale-95 transition-transform duration-300" id="modal-legal-content">
-            <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-800/50 rounded-t-2xl">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">⚖️ Términos, Privacidad y Responsabilidad</h3>
-                <button onclick="cerrarModalLegal()" class="text-gray-400 hover:text-white transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="p-5 overflow-y-auto legal-content-scroll text-sm text-gray-300 space-y-4">
-                <div>
-                    <h4 class="font-bold text-white mb-1 text-base">1. Deslinde de Responsabilidad Financiera y Apuestas</h4>
-                    <p>El uso de <strong>SectorAnalyzer</strong> es bajo su propio y exclusivo riesgo. Esta herramienta proporciona análisis estadísticos basados en mapas de calor y leyes físicas teóricas. <strong>Bajo ninguna circunstancia garantiza ganancias o aciertos.</strong> La ruleta es un juego de azar puro con ventaja matemática absoluta para el casino.</p>
-                </div>
-                <div>
-                    <h4 class="font-bold text-white mb-1 text-base">2. Política de Privacidad y Procesamiento Local</h4>
-                    <p>Valoramos su privacidad. <strong>No almacenamos, recopilamos, compartimos ni enviamos sus datos de uso a servidores externos ni APIs.</strong> Todo el procesamiento, incluyendo el "Asesor Balístico IA", se ejecuta mediante lógica heurística directamente en su navegador.</p>
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-800 bg-gray-800/30 rounded-b-2xl text-right">
-                <button onclick="cerrarModalLegal()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-colors">Entendido</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Cookie / Disclaimer Banner -->
-    <div id="cookie-banner" class="fixed bottom-0 left-0 w-full bg-gray-900 border-t border-blue-900/50 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] z-40 transform translate-y-full transition-transform duration-500">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="text-xs md:text-sm text-gray-300">
-                <strong class="text-white">Aviso de Privacidad y Responsabilidad:</strong> Esta herramienta es solo para análisis estadístico. Todo se procesa localmente (Sin APIs). Al usar la app, acepta nuestras <button onclick="abrirModalLegal()" class="text-blue-400 hover:underline">reglas</button>.
-            </div>
-            <button onclick="aceptarTerminos()" class="whitespace-nowrap bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-transform active:scale-95 w-full md:w-auto">Aceptar y Entender</button>
-        </div>
-    </div>
-
     <script>
+        /* CONFIGURACIÓN Y CONSTANTES */
         const RUEDA_EUROPEA = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
         const ROJOS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
         const EXPECTED_RB = 48.6, EXPECTED_DOZ_COL = 32.4, EXPECTED_GREEN = 2.7; 
@@ -373,6 +411,7 @@
             'TERCIO': [27,13,36,11,30,8,23,10,5,24,16,33]
         };
 
+        /* VARIABLES DE ESTADO */
         let historialTiradas = []; 
         let estadisticasCalculadas = []; 
         let zonasCalientes = []; 
@@ -385,6 +424,7 @@
         let zonasHitboxes = [];
         
         let appInicializada = false;
+        let direccionMacro = 'CW'; 
 
         let perfilFisicoExacto = { tipo: 'manual', sexo: 'mujer', postura: 'pie' };
         let perfilFisicoMacro = { tipo: 'manual', sexo: 'mujer', postura: 'pie' };
@@ -392,53 +432,125 @@
         let direccionActualBola = 'CW'; 
         let direccionImportacion = 'CW'; 
 
+        /* GESTIÓN DE BLOQUEO LEGAL */
         function iniciarApp() {
             if (appInicializada) return;
             try { 
+                verificarTerminos();
                 generarTeclado(); 
                 actualizarUIExacto(); 
                 initPistaEvents(); 
-                verificarTerminos();
                 appInicializada = true; 
             } catch (e) { console.error(e); }
         }
-        
-        iniciarApp(); 
-        document.addEventListener('DOMContentLoaded', iniciarApp);
-        window.addEventListener('resize', () => { if(appInicializada) dibujarMapas(); });
 
-        /* UTILIDADES MODALES Y LEGALES */
-        function abrirModalLegal() {
-            const modal = document.getElementById('modal-legal');
-            const content = document.getElementById('modal-legal-content');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0', 'pointer-events-none');
-                content.classList.remove('scale-95');
-            }, 10);
-        }
-
-        function cerrarModalLegal() {
-            const modal = document.getElementById('modal-legal');
-            const content = document.getElementById('modal-legal-content');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            content.classList.add('scale-95');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        function verificarTerminos() {
+            if (localStorage.getItem('SectorAnalyzer_Aceptado') === 'true') {
+                desbloquearPagina();
+            } else {
+                const muro = document.getElementById('muro-legal');
+                muro.classList.remove('opacity-0', 'pointer-events-none');
+            }
         }
 
         function aceptarTerminos() {
-            localStorage.setItem('terminosAceptados', 'true');
-            const banner = document.getElementById('cookie-banner');
-            banner.classList.add('translate-y-full');
-        }
-
-        function verificarTerminos() {
-            if (!localStorage.getItem('terminosAceptados')) {
-                setTimeout(() => {
-                    document.getElementById('cookie-banner').classList.remove('translate-y-full');
-                }, 1000);
+            localStorage.setItem('SectorAnalyzer_Aceptado', 'true');
+            desbloquearPagina();
+            
+            // Si es la primera vez que entra, sugerir el tutorial
+            if(!localStorage.getItem('SectorAnalyzer_Tutorial_Visto')) {
+                setTimeout(abrirTutorial, 800);
             }
         }
+
+        function rechazarTerminos() {
+            // Expulsar al usuario inmediatamente
+            window.location.href = "about:blank";
+        }
+
+        function desbloquearPagina() {
+            const muro = document.getElementById('muro-legal');
+            muro.classList.add('opacity-0');
+            setTimeout(() => {
+                muro.style.display = 'none';
+                document.body.classList.remove('is-blocked');
+            }, 500);
+        }
+
+        /* GESTIÓN DE TUTORIAL ESTILO NEON */
+        const pasosTutorial = [
+            {
+                titulo: "🌟 BIENVENIDO A SECTOR ANALYZER",
+                texto: "La herramienta matemática más avanzada para analizar la ruleta mediante entropía física y desviaciones estadísticas.",
+                color: "purple"
+            },
+            {
+                titulo: "🎯 MODO TIRADAS (EXACTO)",
+                texto: "Registra cada número que sale. Ideal para ruletas manuales. Analiza la biometría del crupier (fuerza, postura) y descubre si tiene una zona de caída repetitiva.",
+                color: "blue"
+            },
+            {
+                titulo: "📊 MODO GRÁFICOS (MACRO)",
+                texto: "Usa los porcentajes que muestra el casino en su pantalla. Calcula intersecciones ocultas de desviaciones matemáticas para encontrar números y sectores 'calientes'.",
+                color: "purple"
+            },
+            {
+                titulo: "🔥 MAPA BALÍSTICO",
+                texto: "Visualiza la intensidad térmica en tiempo real. <b>Rojo/Rosa brillante</b> indica la mayor concentración de probabilidad balística para el próximo giro.",
+                color: "blue"
+            },
+            {
+                titulo: "🤖 ASESOR IA (SIN SERVIDORES)",
+                texto: "Haz clic en 'Analizar Mesa' para que nuestra IA local lea las anomalías matemáticas y te sugiera una táctica clara, 100% segura y libre de rastreos.",
+                color: "green"
+            }
+        ];
+        let pasoActualTutorial = 0;
+
+        function abrirTutorial() {
+            pasoActualTutorial = 0;
+            const modal = document.getElementById('tutorial-overlay');
+            modal.style.display = 'flex';
+            renderizarPasoTutorial();
+            localStorage.setItem('SectorAnalyzer_Tutorial_Visto', 'true');
+        }
+
+        function cerrarTutorial() {
+            const modal = document.getElementById('tutorial-overlay');
+            modal.style.display = 'none';
+        }
+
+        function renderizarPasoTutorial() {
+            const container = document.getElementById('tut-content');
+            const data = pasosTutorial[pasoActualTutorial];
+            const borderClass = data.color === 'purple' ? 'neon-border-purple' : (data.color === 'blue' ? 'neon-border-blue' : 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]');
+            const textGlow = `text-${data.color}-400 neon-text-glow`;
+            
+            container.innerHTML = `
+                <div class="bg-gray-900 rounded-2xl p-6 border ${borderClass} tut-card flex flex-col items-center text-center">
+                    <h2 class="text-xl font-extrabold mb-4 ${textGlow}">${data.titulo}</h2>
+                    <p class="text-sm text-gray-300 mb-6 leading-relaxed">${data.texto}</p>
+                    
+                    <div class="flex justify-between w-full items-center mt-4">
+                        <div class="flex gap-1">
+                            ${pasosTutorial.map((_, i) => `<div class="h-1.5 w-6 rounded-full ${i === pasoActualTutorial ? `bg-${data.color}-500` : 'bg-gray-700'}"></div>`).join('')}
+                        </div>
+                        <div class="flex gap-3">
+                            ${pasoActualTutorial > 0 ? `<button onclick="pasoActualTutorial--; renderizarPasoTutorial()" class="px-4 py-2 text-xs text-gray-400 hover:text-white transition-colors">ANTERIOR</button>` : ''}
+                            ${pasoActualTutorial < pasosTutorial.length - 1 
+                                ? `<button onclick="pasoActualTutorial++; renderizarPasoTutorial()" class="px-5 py-2 bg-${data.color}-600 hover:bg-${data.color}-500 text-white font-bold text-xs rounded-lg shadow-lg">SIGUIENTE ➔</button>` 
+                                : `<button onclick="cerrarTutorial()" class="px-5 py-2 bg-green-600 hover:bg-green-500 text-white font-bold text-xs rounded-lg shadow-[0_0_15px_rgba(34,197,94,0.6)]">¡COMENZAR!</button>`
+                            }
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* INICIALIZACIÓN */
+        iniciarApp(); 
+        document.addEventListener('DOMContentLoaded', iniciarApp);
+        window.addEventListener('resize', () => { if(appInicializada) dibujarMapas(); });
 
         /* NAVEGACIÓN Y MODOS */
         function switchVistaMap(vista) {
@@ -504,6 +616,7 @@
             }
         }
 
+        /* GESTIÓN DE PERFILES */
         function setPerfil(c, v) {
             perfilFisicoExacto[c] = v;
             const bA = "flex-1 text-xs py-1 rounded border border-gray-600 bg-blue-600 text-white font-bold transition-colors", bI = "flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors";
@@ -519,6 +632,13 @@
             if(c==='tipo'){ document.getElementById('pfm-tipo-manual').className=v==='manual'?bA:bI; document.getElementById('pfm-tipo-auto').className=v==='auto'?bA:bI; document.querySelectorAll('.pfm-manual-only').forEach(el=>el.style.opacity=v==='manual'?"1":"0.3"); }
             else if(c==='sexo'){ document.getElementById('pfm-sexo-mujer').className=v==='mujer'?bA:bI; document.getElementById('pfm-sexo-hombre').className=v==='hombre'?bA:bI; }
             else if(c==='postura'){ document.getElementById('pfm-postura-pie').className=v==='pie'?bA:bI; document.getElementById('pfm-postura-sentado').className=v==='sentado'?bA:bI; }
+            if(!document.getElementById('macro-results').classList.contains('hidden')) calcularPrediccionMacro(); 
+        }
+
+        function setDirMacro(dir) {
+            direccionMacro = dir;
+            document.getElementById('mac-dir-cw').className = dir === 'CW' ? "flex-1 text-xs py-1 rounded border border-blue-500 bg-blue-600 text-white font-bold transition-colors" : "flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors";
+            document.getElementById('mac-dir-ccw').className = dir === 'CCW' ? "flex-1 text-xs py-1 rounded border border-blue-500 bg-blue-600 text-white font-bold transition-colors" : "flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors";
             if(!document.getElementById('macro-results').classList.contains('hidden')) calcularPrediccionMacro(); 
         }
 
@@ -544,7 +664,7 @@
             document.getElementById('tab-import-img').className = tab === 'img' ? "px-3 py-1 text-xs font-bold border-b-2 border-blue-500 text-blue-400" : "px-3 py-1 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-300";
         }
 
-        /* INGRESO DE DATOS */
+        /* INGRESO DE DATOS - OCR Y TECLADOS */
         function procesarPegado() {
             const nums = document.getElementById('paste-input').value.match(/\d+/g);
             if(nums) {
@@ -561,13 +681,13 @@
 
         async function procesarImagenes() {
             const fileInput = document.getElementById('image-upload'), statusPanel = document.getElementById('ocr-status'), btnOcr = document.getElementById('btn-ocr'), files = fileInput.files;
-            if (files.length === 0) { alert("Selecciona al menos una imagen."); return; }
+            if (files.length === 0) return;
             statusPanel.classList.remove('hidden'); btnOcr.disabled = true; btnOcr.classList.add('opacity-50');
             
             let numsExt = [];
             try {
                 for (let i = 0; i < files.length; i++) {
-                    statusPanel.innerHTML = `Escaneando captura ${i+1} de ${files.length}...<br><span class="animate-pulse">⏳ Procesando OCR...</span>`;
+                    statusPanel.innerHTML = `Escaneando captura ${i+1} de ${files.length}...<br><span class="animate-pulse text-blue-400">⏳ Procesando OCR...</span>`;
                     const { data: { text } } = await Tesseract.recognize(files[i], 'eng');
                     const numsEnTexto = text.match(/\d+/g);
                     if (numsEnTexto) numsEnTexto.forEach(n => { let num = parseInt(n, 10); if(num>=0 && num<=36) numsExt.push(num); });
@@ -578,12 +698,70 @@
                     let d = direccionImportacion; for(let i = nuevosDatos.length - 1; i >= 0; i--) { nuevosDatos[i].dir = d; d = d === 'CW' ? 'CCW' : 'CW'; }
                     historialTiradas.push(...nuevosDatos); setDireccion(direccionImportacion === 'CW' ? 'CCW' : 'CW'); actualizarUIExacto();
                 } else {
-                    statusPanel.innerHTML = `⚠️ No se detectaron números. Intenta recortar mejor.`; statusPanel.className = "bg-gray-950 p-2 rounded border border-yellow-800 text-xs font-mono text-yellow-400 text-center";
+                    statusPanel.innerHTML = `⚠️ No se detectaron números. Recorte solo los dígitos.`; statusPanel.className = "bg-gray-950 p-2 rounded border border-yellow-800 text-xs font-mono text-yellow-400 text-center";
                 }
                 setTimeout(() => { statusPanel.classList.add('hidden'); fileInput.value = ""; }, 4000);
             } catch (err) {
-                console.error(err); statusPanel.innerHTML = `❌ Error al leer imagen.`; statusPanel.className = "bg-gray-950 p-2 rounded border border-red-800 text-xs font-mono text-red-400 text-center";
+                statusPanel.innerHTML = `❌ Error al leer imagen.`; statusPanel.className = "bg-gray-950 p-2 rounded border border-red-800 text-xs font-mono text-red-400 text-center";
             } finally { btnOcr.disabled = false; btnOcr.classList.remove('opacity-50'); }
+        }
+
+        // NUEVO: OCR para Modo Gráficos
+        async function procesarImagenMacro() {
+            const fileInput = document.getElementById('macro-image-upload');
+            const statusPanel = document.getElementById('ocr-status-macro');
+            const btnOcr = document.getElementById('btn-ocr-macro');
+            const files = fileInput.files;
+            
+            if (files.length === 0) return;
+            statusPanel.classList.remove('hidden'); 
+            btnOcr.disabled = true; btnOcr.classList.add('opacity-50');
+            statusPanel.innerHTML = `<span class="animate-pulse text-purple-400">⏳ Extrayendo datos del gráfico...</span>`;
+            
+            try {
+                const { data: { text } } = await Tesseract.recognize(files[0], 'eng');
+                const numsEnTexto = text.match(/\d+/g);
+                let vals = [];
+                if (numsEnTexto) {
+                    numsEnTexto.forEach(n => {
+                        let v = parseInt(n, 10);
+                        if (v >= 0 && v <= 100) vals.push(v);
+                    });
+                }
+                
+                if (vals.length >= 13) {
+                    // Mapear los primeros 13 valores válidos (0-100)
+                    document.getElementById('mac-red').value = vals[0];
+                    document.getElementById('mac-black').value = vals[1];
+                    document.getElementById('mac-green').value = vals[2];
+                    document.getElementById('mac-even').value = vals[3];
+                    document.getElementById('mac-odd').value = vals[4];
+                    document.getElementById('mac-low').value = vals[5];
+                    document.getElementById('mac-high').value = vals[6];
+                    document.getElementById('mac-col1').value = vals[7];
+                    document.getElementById('mac-col2').value = vals[8];
+                    document.getElementById('mac-col3').value = vals[9];
+                    document.getElementById('mac-doz1').value = vals[10];
+                    document.getElementById('mac-doz2').value = vals[11];
+                    document.getElementById('mac-doz3').value = vals[12];
+                    
+                    statusPanel.innerHTML = `✅ ¡Captura exitosa! Se llenaron los 13 campos principales.`;
+                    statusPanel.className = "mt-2 bg-gray-900 p-2 rounded border border-green-800 text-xs font-mono text-green-400 text-center";
+                } else if (vals.length > 0) {
+                    statusPanel.innerHTML = `⚠️ Solo se detectaron ${vals.length} valores. Llena el resto manualmente.`;
+                    statusPanel.className = "mt-2 bg-gray-900 p-2 rounded border border-yellow-800 text-xs font-mono text-yellow-400 text-center";
+                } else {
+                    statusPanel.innerHTML = `❌ No se detectaron porcentajes claros. Asegúrate de recortar solo los números.`;
+                    statusPanel.className = "mt-2 bg-gray-900 p-2 rounded border border-red-800 text-xs font-mono text-red-400 text-center";
+                }
+                
+                setTimeout(() => { statusPanel.classList.add('hidden'); fileInput.value = ""; }, 5000);
+            } catch (err) {
+                statusPanel.innerHTML = `❌ Error en el motor OCR.`;
+                statusPanel.className = "mt-2 bg-gray-900 p-2 rounded border border-red-800 text-xs font-mono text-red-400 text-center";
+            } finally { 
+                btnOcr.disabled = false; btnOcr.classList.remove('opacity-50'); 
+            }
         }
 
         function generarTeclado() {
@@ -653,6 +831,9 @@
         function calcularPrediccionMacro() {
             const stats = { red: obtenerValorInput('mac-red'), black: obtenerValorInput('mac-black'), green: obtenerValorInput('mac-green'), even: obtenerValorInput('mac-even'), odd: obtenerValorInput('mac-odd'), low: obtenerValorInput('mac-low'), high: obtenerValorInput('mac-high'), col1: obtenerValorInput('mac-col1'), col2: obtenerValorInput('mac-col2'), col3: obtenerValorInput('mac-col3'), doz1: obtenerValorInput('mac-doz1'), doz2: obtenerValorInput('mac-doz2'), doz3: obtenerValorInput('mac-doz3') };
             estadisticasCalculadas = [];
+            
+            // 1. Calcular Desviaciones Crudas
+            let tempStats = [];
             for (let i = 0; i <= 36; i++) {
                 let score = 0; let p = getPropiedades(i);
                 if (i === 0) { score += (stats.green - EXPECTED_GREEN); } else {
@@ -662,8 +843,28 @@
                     score += (p.col === 1 ? (stats.col1 - EXPECTED_DOZ_COL) : p.col === 2 ? (stats.col2 - EXPECTED_DOZ_COL) : (stats.col3 - EXPECTED_DOZ_COL));
                     score += (p.doz === 1 ? (stats.doz1 - EXPECTED_DOZ_COL) : p.doz === 2 ? (stats.doz2 - EXPECTED_DOZ_COL) : (stats.doz3 - EXPECTED_DOZ_COL));
                 }
-                estadisticasCalculadas.push({ numero: i, desviacion: score / 5, apariciones: 0 });
+                tempStats.push({ numero: i, desviacion: score / 5, apariciones: 0 });
             }
+
+            // 2. Aplicar Momentum Balístico Direccional (Nueva Función)
+            // Simula hacia donde saltaría la bola basándose en la dirección del último giro
+            estadisticasCalculadas = tempStats.map(stat => ({ ...stat })); // Deep copy
+            for (let i = 0; i < 37; i++) {
+                let currNum = RUEDA_EUROPEA[i];
+                let stat = tempStats.find(s => s.numero === currNum);
+                
+                if(stat.desviacion > 0) {
+                    // El salto de la bola promedia de 1 a 3 bolsillos en la dirección de inercia
+                    let saltoFisico = direccionMacro === 'CW' ? 2 : -2; 
+                    let nextIndex = (i + saltoFisico + 37) % 37;
+                    let targetNum = RUEDA_EUROPEA[nextIndex];
+                    
+                    let targetStatIndex = estadisticasCalculadas.findIndex(s => s.numero === targetNum);
+                    // Transfiere 15% del "calor" a la zona de impacto futuro
+                    estadisticasCalculadas[targetStatIndex].desviacion += (stat.desviacion * 0.15);
+                }
+            }
+
             analizarClusteresFisicos(perfilFisicoMacro); 
             dibujarMapas();
             
@@ -705,7 +906,7 @@
 
         function renderizarSectores(container, isMacro = false) {
             container.innerHTML = '';
-            if (zonasCalientes.length === 0) { container.innerHTML = `<div class="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-center text-gray-400 text-xs">Mesa equilibrada. Sin sesgo balístico claro.</div>`; return; }
+            if (zonasCalientes.length === 0) { container.innerHTML = `<div class="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-center text-gray-400 text-xs">Mesa equilibrada. Sin sesgo matemático o balístico claro.</div>`; return; }
             
             zonasCalientes.forEach((zona, idx) => {
                 const p = idx === 0, conf = Math.min(99, 40 + (zona.energia * 150)).toFixed(1); 
@@ -723,34 +924,24 @@
             });
         }
 
-        /* 🤖 ASESOR IA (LÓGICA FRONTEND PURA - NO REQUIERE APIS EXTERNAS) 🤖 */
+        /* ASESOR IA (FRONTEND) */
         async function solicitarAnalisisIA() {
             const btn = document.getElementById('btn-ai-trigger');
             const container = document.getElementById('ai-output-container');
             const loading = document.getElementById('ai-loading');
             const report = document.getElementById('ai-report');
 
-            // 1. Validar que haya datos suficientes para un análisis creíble
             if (modoActual === 'exacto' && historialTiradas.length < 12) {
-                container.classList.remove('hidden');
-                loading.classList.add('hidden');
-                report.innerHTML = `<span class="text-red-400">⚠️ El Motor Heurístico requiere al menos 12 tiradas para modelar la dispersión física con precisión.</span>`;
-                return;
+                container.classList.remove('hidden'); loading.classList.add('hidden');
+                report.innerHTML = `<span class="text-red-400">⚠️ El Motor Heurístico requiere al menos 12 tiradas para modelar la dispersión física con precisión.</span>`; return;
             } else if (modoActual === 'macro' && document.getElementById('macro-results').classList.contains('hidden')) {
-                container.classList.remove('hidden');
-                loading.classList.add('hidden');
-                report.innerHTML = `<span class="text-red-400">⚠️ Presiona "Analizar Intersecciones" primero para generar la matriz de datos de la ruleta.</span>`;
-                return;
+                container.classList.remove('hidden'); loading.classList.add('hidden');
+                report.innerHTML = `<span class="text-red-400">⚠️ Presiona "Analizar Intersecciones" primero para generar la matriz de datos de la ruleta.</span>`; return;
             }
 
-            // 2. Preparar UI para simular carga
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            container.classList.remove('hidden');
-            loading.classList.remove('hidden');
-            report.innerHTML = '';
+            btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed');
+            container.classList.remove('hidden'); loading.classList.remove('hidden'); report.innerHTML = '';
 
-            // 3. Simulamos un retraso de procesamiento para dar la sensación de análisis profundo
             setTimeout(() => {
                 let aiText = "";
                 const perfil = modoActual === 'exacto' ? perfilFisicoExacto : perfilFisicoMacro;
@@ -759,61 +950,44 @@
 
                 if (modoActual === 'exacto') {
                     const totalTiradas = historialTiradas.length;
-                    
                     if (zonasCalientes.length === 0) {
                         aiText = `<strong><span class="text-gray-400">STATUS:</span> ALTA ENTROPÍA (DISPERSIÓN ALEATORIA)</strong><br><br>`;
                         aiText += `Evaluados <strong>${totalTiradas}</strong> impactos. El análisis balístico actual sobre ${crupierDesc} no arroja una firma de lanzamiento consistente bajo la dirección de bola <strong>${direccionActualBola === 'CW' ? 'Horaria' : 'Antihoraria'}</strong>.<br><br>`;
-                        aiText += `<strong>🔍 DIAGNÓSTICO:</strong> La caída de la bola obedece a un modelo caótico puro. La energía se está disipando uniformemente por los deflectores (rombos) sin favorecer ningún cuadrante del cilindro.<br><br>`;
-                        aiText += `<strong>⚠️ TÁCTICA RECOMENDADA:</strong> <span class="text-red-400">NO APOSTAR.</span> Absténgase de operar en esta mesa hasta que ocurra un cambio de crupier o la biometría del lanzamiento se estabilice tras recopilar más tiradas.`;
+                        aiText += `<strong>🔍 DIAGNÓSTICO:</strong> La caída de la bola obedece a un modelo caótico puro. La energía se está disipando uniformemente.<br><br>`;
+                        aiText += `<strong>⚠️ TÁCTICA RECOMENDADA:</strong> <span class="text-red-400">NO APOSTAR.</span> Absténgase de operar en esta mesa.`;
                     } else {
-                        let z1 = zonasCalientes[0];
-                        let z2 = zonasCalientes.length > 1 ? zonasCalientes[1] : null;
+                        let z1 = zonasCalientes[0], z2 = zonasCalientes.length > 1 ? zonasCalientes[1] : null;
                         let conf = Math.min(99, 40 + (z1.energia * 150)).toFixed(1);
-                        
-                        aiText = `<strong><span class="text-purple-400">STATUS:</span> FIRMA BALÍSTICA DETECTADA (CONFIANZA: ${conf}%)</strong><br><br>`;
-                        
-                        if (isAuto) {
-                            aiText += `<strong>⚙️ DIAGNÓSTICO DE HARDWARE:</strong> Se detecta desgaste o inclinación micromecánica en el cilindro automatizado. La velocidad de inyección de la bola y el frenado electromagnético del rotor están creando un "Drop Zone" predecible.<br><br>`;
-                        } else {
-                            aiText += `<strong>👤 ANÁLISIS BIOMECÁNICO:</strong> ${crupierDesc.charAt(0).toUpperCase() + crupierDesc.slice(1)} presenta fatiga o memoria muscular (lanzamiento rutinario). La velocidad de la bola respecto a la rueda genera una colisión dominante siempre en la misma área de deflectores.<br><br>`;
-                        }
-                        
-                        aiText += `<strong>🎯 PUNTO DE IMPACTO Y CLÚSTER:</strong> La bola tiende a morir abruptamente en el sector del <strong>${z1.centro}</strong>. `;
-                        
+                        aiText = `<strong><span class="text-blue-400">STATUS:</span> FIRMA BALÍSTICA DETECTADA (CONFIANZA: ${conf}%)</strong><br><br>`;
+                        if (isAuto) aiText += `<strong>⚙️ DIAGNÓSTICO:</strong> Desgaste o inclinación micromecánica detectada. Se crea una "Drop Zone" predecible.<br><br>`;
+                        else aiText += `<strong>👤 ANÁLISIS BIOMECÁNICO:</strong> Se detecta memoria muscular (lanzamiento rutinario). Colisión dominante en área específica de deflectores.<br><br>`;
+                        aiText += `<strong>🎯 PUNTO DE IMPACTO:</strong> La bola tiende a morir abruptamente en el sector del <strong>${z1.centro}</strong>. `;
                         if (z2) {
-                            aiText += `Además, se observa una onda de rebote armónico hacia el sector opuesto del <strong>${z2.centro}</strong>.<br><br>`;
-                            aiText += `<strong>💡 TÁCTICA RECOMENDADA:</strong> Juegue una estrategia de "Ataque en Pinza". Cubra el <strong>${z1.centro} y 2 vecinos</strong> (sector primario de caída) y apóyese con el <strong>${z2.centro} y 1 vecino</strong> (sector secundario de rebote).`;
+                            aiText += `Rebote armónico hacia <strong>${z2.centro}</strong>.<br><br>`;
+                            aiText += `<strong>💡 TÁCTICA RECOMENDADA:</strong> "Ataque en Pinza". Cubra el <strong>${z1.centro} y vecinos</strong> (primario) y apóyese con el <strong>${z2.centro}</strong> (secundario).`;
                         } else {
-                            aiText += `La dispersión tras el impacto es muy baja (efecto de "bola muerta").<br><br>`;
-                            aiText += `<strong>💡 TÁCTICA RECOMENDADA:</strong> Ejecute un ataque cerrado focalizándose en el número <strong>${z1.centro}</strong> y máximo 2 vecinos por lado. Considere usar apuestas directas (plenos) para maximizar el ROI.`;
+                            aiText += `<br><br><strong>💡 TÁCTICA RECOMENDADA:</strong> Ataque cerrado focalizándose en el <strong>${z1.centro}</strong> y máximo 2 vecinos por lado.`;
                         }
                     }
                 } else {
-                    // Modo MACRO Heurístico
                     let topStats = [...estadisticasCalculadas].sort((a,b) => b.desviacion - a.desviacion).slice(0, 4);
-                    let topNums = topStats.map(s => s.numero);
-                    let maxDev = topStats[0] ? topStats[0].desviacion.toFixed(2) : 0;
+                    let topNums = topStats.map(s => s.numero), maxDev = topStats[0] ? topStats[0].desviacion.toFixed(2) : 0;
+                    let dirImpactStr = direccionMacro === 'CW' ? 'Horario' : 'Antihorario';
 
                     if (zonasCalientes.length === 0 || maxDev < 0.5) {
                         aiText = `<strong><span class="text-gray-400">ANÁLISIS MACRO:</span> MESA EN EQUILIBRIO MATEMÁTICO</strong><br><br>`;
-                        aiText += `El análisis cruzado de las estadísticas de pantalla (Colores, Docenas, Paridad, etc.) muestra que el generador de eventos (o el crupier) está respetando el margen de varianza teórico (Edge del casino).<br><br>`;
-                        aiText += `<strong>⚠️ CONCLUSIÓN:</strong> No hay ineficiencias explotables detectadas en el gráfico. Jugar ahora mismo dependerá 100% del azar, exponiéndole a la ventaja matemática de la casa.`;
+                        aiText += `Las estadísticas respetan el margen de varianza teórico (Edge del casino).<br><br>`;
+                        aiText += `<strong>⚠️ CONCLUSIÓN:</strong> No hay ineficiencias explotables. Jugar ahora mismo dependerá 100% del azar.`;
                     } else {
                         let z1 = zonasCalientes[0];
-                        aiText = `<strong><span class="text-purple-400">ANÁLISIS MACRO:</span> DESCOMPENSACIÓN SEVERA DETECTADA (H-SCORE: +${maxDev})</strong><br><br>`;
-                        aiText += `El motor ha cruzado las probabilidades marginales del panel del casino (Rojo/Negro, Docenas, Paridad). Las matemáticas revelan una ineficiencia flagrante que el software del casino no puede ocultar en el gráfico.<br><br>`;
-                        aiText += `<strong>🔍 VECTORES DOMINANTES:</strong> Los números individuales con mayor descompensación matemática (atrasos/calores cruzados) en este preciso momento son: <strong>${topNums.join(', ')}</strong>.<br><br>`;
-                        aiText += `<strong>💡 TÁCTICA RECOMENDADA:</strong> Estos números "huérfanos" apuntan a una zona de choque físico en la ruleta. El clúster del cilindro que agrupa y absorbe toda esta energía estadística es el sector del <strong>${z1.centro}</strong>. Juegue a los vecinos del <strong>${z1.centro}</strong> para capitalizar la ineficiencia proyectada en el tablero.`;
+                        aiText = `<strong><span class="text-purple-400">ANÁLISIS MACRO:</span> DESCOMPENSACIÓN SEVERA DETECTADA (SCORE: +${maxDev})</strong><br><br>`;
+                        aiText += `Se identificaron ineficiencias flagrantes cruzando probabilidades marginales (Rojo/Negro, Docenas, Paridad). Además, el cálculo de Inercia en dirección <strong>${dirImpactStr}</strong> ha ajustado el impacto futuro de la bola.<br><br>`;
+                        aiText += `<strong>🔍 VECTORES DOMINANTES:</strong> Números con mayor calor absoluto: <strong>${topNums.join(', ')}</strong>.<br><br>`;
+                        aiText += `<strong>💡 TÁCTICA RECOMENDADA:</strong> El clúster físico que absorbe el Momentum Direccional es el sector del <strong>${z1.centro}</strong>. Juegue a los vecinos del <strong>${z1.centro}</strong> para capitalizar la ineficiencia proyectada.`;
                     }
                 }
-
-                // Mostrar reporte
-                loading.classList.add('hidden');
-                report.innerHTML = aiText;
-                
-                // Restaurar botón
-                btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                loading.classList.add('hidden'); report.innerHTML = aiText;
+                btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }, 1800); 
         }
 
@@ -827,35 +1001,27 @@
                 const rect = canvas.getBoundingClientRect();
                 const pr = window.devicePixelRatio || 1;
                 let clientX = e.clientX, clientY = e.clientY;
-                if(e.touches && e.touches.length > 0) {
-                    clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
-                }
+                if(e.touches && e.touches.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
                 const mx = (clientX - rect.left) * pr, my = (clientY - rect.top) * pr;
                 
                 let drawX = mx, drawY = my;
                 if(orientacionPista === 'H') {
                     const cx = canvas.width/2, cy = canvas.height/2;
                     const rx = mx - cx, ry = my - cy;
-                    drawX = -ry + canvas.height/2; 
-                    drawY = rx + canvas.width/2;   
+                    drawX = -ry + canvas.height/2; drawY = rx + canvas.width/2;   
                 }
                 
                 let clicked = null;
-                for(let z of zonasHitboxes) {
-                    if(Math.hypot(drawX - z.x, drawY - z.y) < z.r) { clicked = z.id; break; }
-                }
+                for(let z of zonasHitboxes) { if(Math.hypot(drawX - z.x, drawY - z.y) < z.r) { clicked = z.id; break; } }
                 
                 if (e.type === 'pointermove' || e.type === 'mousemove') {
                     if (clicked !== zonaHoverPista) { zonaHoverPista = clicked; dibujarPista(); }
                 } else if (e.type === 'click' || e.type === 'touchstart') {
-                    e.preventDefault();
-                    zonaSelectPista = (zonaSelectPista === clicked && clicked !== null) ? null : clicked;
-                    dibujarPista();
+                    e.preventDefault(); zonaSelectPista = (zonaSelectPista === clicked && clicked !== null) ? null : clicked; dibujarPista();
                 }
             };
             
-            canvas.addEventListener('click', handleInteract);
-            canvas.addEventListener('mousemove', handleInteract);
+            canvas.addEventListener('click', handleInteract); canvas.addEventListener('mousemove', handleInteract);
             canvas.addEventListener('touchstart', handleInteract, {passive: false});
             canvas.addEventListener('mouseleave', () => { zonaHoverPista = null; dibujarPista(); });
             window.pistaEventsAdded = true;
@@ -871,8 +1037,7 @@
         }
 
         function dibujarMapas() {
-            if (vistaActualMap === 'cilindro') dibujarCilindro();
-            else dibujarPista();
+            if (vistaActualMap === 'cilindro') dibujarCilindro(); else dibujarPista();
         }
 
         function dibujarCilindro() {
@@ -892,28 +1057,15 @@
                 ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, st, en); ctx.closePath();
                 
                 let v = 0;
-                if (estadisticasCalculadas.length === 0) {
-                    ctx.fillStyle = n===0 ? '#166534' : (ROJOS.includes(n) ? '#7f1d1d' : '#111827');
-                    ctx.shadowBlur = 0;
-                } else { 
+                if (estadisticasCalculadas.length === 0) { ctx.fillStyle = n===0 ? '#166534' : (ROJOS.includes(n) ? '#7f1d1d' : '#111827'); ctx.shadowBlur = 0; } 
+                else { 
                     let s = estadisticasCalculadas.find(x => x.numero === n);
                     if (s && s.desviacion > 0) v = 0.2 + (s.desviacion / maxD) * 0.8; 
-                    let color = getColorTermico(v, isMac);
-                    ctx.fillStyle = color;
-                    
-                    if (v > 0.2) {
-                        ctx.shadowColor = color;
-                        ctx.shadowBlur = (30 * v) * pr;
-                    } else {
-                        ctx.shadowBlur = 0;
-                    }
+                    let color = getColorTermico(v, isMac); ctx.fillStyle = color;
+                    if (v > 0.2) { ctx.shadowColor = color; ctx.shadowBlur = (30 * v) * pr; } else { ctx.shadowBlur = 0; }
                 }
                 
-                ctx.fill(); 
-                ctx.shadowBlur = 0; 
-                ctx.lineWidth = 1 * pr; 
-                ctx.strokeStyle = v > 0.3 ? 'rgba(3, 7, 18, 0.1)' : '#030712'; 
-                ctx.stroke();
+                ctx.fill(); ctx.shadowBlur = 0; ctx.lineWidth = 1 * pr; ctx.strokeStyle = v > 0.3 ? 'rgba(3, 7, 18, 0.1)' : '#030712'; ctx.stroke();
                 
                 ctx.save(); ctx.translate(cx, cy); ctx.rotate(st + (sa / 2));
                 ctx.fillStyle = '#ffffff'; ctx.shadowColor = '#000000'; ctx.shadowBlur = 4 * pr;
@@ -927,8 +1079,7 @@
                     let st = (stIdx * sa) - (Math.PI / 2) - (sa / 2), en = (enIdx * sa) - (Math.PI / 2) + (sa / 2);
                     if (en < st) en += 2 * Math.PI;
                     ctx.beginPath(); ctx.arc(cx, cy, r + (2 * pr), st, en);
-                    ctx.lineWidth = (idx === 0 ? 5 : 2) * pr; ctx.strokeStyle = isMac ? (idx===0 ? '#d946ef' : '#8b5cf6') : (idx===0 ? '#3b82f6' : '#6b7280');
-                    ctx.stroke();
+                    ctx.lineWidth = (idx === 0 ? 5 : 2) * pr; ctx.strokeStyle = isMac ? (idx===0 ? '#d946ef' : '#8b5cf6') : (idx===0 ? '#3b82f6' : '#6b7280'); ctx.stroke();
                 });
             }
 
@@ -949,57 +1100,31 @@
             let drawW = W_canvas, drawH = H_canvas;
             if (orientacionPista === 'H') {
                 drawW = H_canvas; drawH = W_canvas;
-                ctx.save();
-                ctx.translate(W_canvas/2, H_canvas/2);
-                ctx.rotate(-Math.PI/2);
-                ctx.translate(-drawW/2, -drawH/2);
+                ctx.save(); ctx.translate(W_canvas/2, H_canvas/2); ctx.rotate(-Math.PI/2); ctx.translate(-drawW/2, -drawH/2);
             }
 
-            const pad = 10 * pr;
-            const thick = drawW * 0.22; 
-            const R = (drawW - (pad * 2) - thick) / 2; 
-            let L = drawH - (pad * 2) - thick - (2 * R); 
-            if (L < 0) L = 0;
-            const cx = drawW / 2, cyTop = pad + thick/2 + R, cyBot = pad + thick/2 + R + L;
-            const P = 2 * Math.PI * R + 2 * L;
+            const pad = 10 * pr, thick = drawW * 0.22, R = (drawW - (pad * 2) - thick) / 2; 
+            let L = drawH - (pad * 2) - thick - (2 * R); if (L < 0) L = 0;
+            const cx = drawW / 2, cyTop = pad + thick/2 + R, cyBot = pad + thick/2 + R + L, P = 2 * Math.PI * R + 2 * L;
 
             function getPistaCoords(t) {
                 let d = (t * P) % P; if (d < 0) d += P;
                 const arcL = Math.PI * R / 2;
-                if (d <= arcL) { // TR
-                    let ang = -Math.PI/2 + (d/R); return { x: cx + R * Math.cos(ang), y: cyTop + R * Math.sin(ang), a: ang };
-                }
-                d -= arcL;
-                if (d <= L) { // R Straight
-                    return { x: cx + R, y: cyTop + d, a: 0 };
-                }
-                d -= L;
-                if (d <= arcL) { // BR
-                    let ang = 0 + (d/R); return { x: cx + R * Math.cos(ang), y: cyBot + R * Math.sin(ang), a: ang };
-                }
-                d -= arcL;
-                if (d <= arcL) { // BL
-                    let ang = Math.PI/2 + (d/R); return { x: cx + R * Math.cos(ang), y: cyBot + R * Math.sin(ang), a: ang };
-                }
-                d -= arcL;
-                if (d <= L) { // L Straight
-                    return { x: cx - R, y: cyBot - d, a: Math.PI };
-                }
-                d -= L; // TL
+                if (d <= arcL) { let ang = -Math.PI/2 + (d/R); return { x: cx + R * Math.cos(ang), y: cyTop + R * Math.sin(ang), a: ang }; } d -= arcL;
+                if (d <= L) { return { x: cx + R, y: cyTop + d, a: 0 }; } d -= L;
+                if (d <= arcL) { let ang = 0 + (d/R); return { x: cx + R * Math.cos(ang), y: cyBot + R * Math.sin(ang), a: ang }; } d -= arcL;
+                if (d <= arcL) { let ang = Math.PI/2 + (d/R); return { x: cx + R * Math.cos(ang), y: cyBot + R * Math.sin(ang), a: ang }; } d -= arcL;
+                if (d <= L) { return { x: cx - R, y: cyBot - d, a: Math.PI }; } d -= L;
                 let ang = Math.PI + (d/R); return { x: cx + R * Math.cos(ang), y: cyTop + R * Math.sin(ang), a: ang };
             }
 
-            function getInnerEdge(t) {
-                let pt = getPistaCoords(t);
-                return { x: pt.x - (thick/2)*Math.cos(pt.a), y: pt.y - (thick/2)*Math.sin(pt.a) };
-            }
+            function getInnerEdge(t) { let pt = getPistaCoords(t); return { x: pt.x - (thick/2)*Math.cos(pt.a), y: pt.y - (thick/2)*Math.sin(pt.a) }; }
 
             let maxD = 0.0001; estadisticasCalculadas.forEach(s => { if (s.desviacion > maxD) maxD = s.desviacion; });
             let activeZ = zonaSelectPista || zonaHoverPista;
 
             for (let i = 0; i < 37; i++) {
-                let n = RUEDA_EUROPEA[i];
-                let tStart = (i - 0.5) / 37, tEnd = (i + 0.5) / 37;
+                let n = RUEDA_EUROPEA[i], tStart = (i - 0.5) / 37, tEnd = (i + 0.5) / 37;
                 
                 ctx.beginPath();
                 const steps = 4;
@@ -1010,8 +1135,7 @@
                 }
                 for(let j=steps; j>=0; j--) {
                     let pt = getPistaCoords(tStart + (tEnd-tStart)*(j/steps));
-                    let ix = pt.x - (thick/2)*Math.cos(pt.a), iy = pt.y - (thick/2)*Math.sin(pt.a);
-                    ctx.lineTo(ix, iy);
+                    let ix = pt.x - (thick/2)*Math.cos(pt.a), iy = pt.y - (thick/2)*Math.sin(pt.a); ctx.lineTo(ix, iy);
                 }
                 ctx.closePath();
 
@@ -1019,45 +1143,26 @@
                 let dimOthers = activeZ && !isHighlighted;
 
                 let v = 0;
-                if (estadisticasCalculadas.length === 0) {
-                    ctx.fillStyle = n===0 ? '#166534' : (ROJOS.includes(n) ? '#7f1d1d' : '#111827');
-                    ctx.shadowBlur = 0;
-                } else { 
+                if (estadisticasCalculadas.length === 0) { ctx.fillStyle = n===0 ? '#166534' : (ROJOS.includes(n) ? '#7f1d1d' : '#111827'); ctx.shadowBlur = 0; } 
+                else { 
                     let s = estadisticasCalculadas.find(x => x.numero === n);
                     if (s && s.desviacion > 0) v = 0.2 + (s.desviacion / maxD) * 0.8; 
-                    let color = getColorTermico(v, isMac);
-                    ctx.fillStyle = color;
-                    
-                    if (v > 0.2 && !dimOthers) {
-                        ctx.shadowColor = color;
-                        ctx.shadowBlur = (30 * v) * pr;
-                    } else {
-                        ctx.shadowBlur = 0;
-                    }
+                    let color = getColorTermico(v, isMac); ctx.fillStyle = color;
+                    if (v > 0.2 && !dimOthers) { ctx.shadowColor = color; ctx.shadowBlur = (30 * v) * pr; } else { ctx.shadowBlur = 0; }
                 }
                 
                 if (dimOthers) { ctx.fillStyle = '#111827'; ctx.globalAlpha = 0.3; ctx.shadowBlur = 0; } else { ctx.globalAlpha = 1.0; }
-                ctx.fill();
-                ctx.globalAlpha = 1.0;
-                ctx.shadowBlur = 0; 
+                ctx.fill(); ctx.globalAlpha = 1.0; ctx.shadowBlur = 0; 
                 
-                if (isHighlighted) {
-                    ctx.lineWidth = 3 * pr; ctx.strokeStyle = '#eab308'; 
-                } else {
-                    ctx.lineWidth = 1 * pr; 
-                    ctx.strokeStyle = (v > 0.3 && !dimOthers) ? 'rgba(3, 7, 18, 0.1)' : '#030712';
-                }
+                if (isHighlighted) { ctx.lineWidth = 3 * pr; ctx.strokeStyle = '#eab308'; } else { ctx.lineWidth = 1 * pr; ctx.strokeStyle = (v > 0.3 && !dimOthers) ? 'rgba(3, 7, 18, 0.1)' : '#030712'; }
                 ctx.stroke();
 
                 let midPt = getPistaCoords(i / 37);
-                ctx.save();
-                ctx.translate(midPt.x, midPt.y);
-                if (orientacionPista === 'H') ctx.rotate(Math.PI/2);
+                ctx.save(); ctx.translate(midPt.x, midPt.y); if (orientacionPista === 'H') ctx.rotate(Math.PI/2);
                 ctx.fillStyle = (dimOthers && !isHighlighted) ? '#4b5563' : '#ffffff';
                 ctx.shadowColor = '#000000'; ctx.shadowBlur = dimOthers ? 0 : 3 * pr;
                 ctx.font = `bold ${thick * 0.4}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(n.toString(), 0, 0);
-                ctx.restore();
+                ctx.fillText(n.toString(), 0, 0); ctx.restore();
             }
 
             if (zonasCalientes.length > 0 && !activeZ) {
@@ -1071,19 +1176,14 @@
                         let ox = pt.x + (thick/2 + 2*pr)*Math.cos(pt.a), oy = pt.y + (thick/2 + 2*pr)*Math.sin(pt.a);
                         j===0 ? ctx.moveTo(ox, oy) : ctx.lineTo(ox, oy);
                     }
-                    ctx.lineWidth = (idx === 0 ? 5 : 2) * pr; ctx.strokeStyle = isMac ? (idx===0 ? '#d946ef' : '#8b5cf6') : (idx===0 ? '#3b82f6' : '#6b7280');
-                    ctx.stroke();
+                    ctx.lineWidth = (idx === 0 ? 5 : 2) * pr; ctx.strokeStyle = isMac ? (idx===0 ? '#d946ef' : '#8b5cf6') : (idx===0 ? '#3b82f6' : '#6b7280'); ctx.stroke();
                 });
             }
 
             ctx.beginPath();
-            let vo_L = getInnerEdge(27.5 / 37); let vo_R = getInnerEdge(7.5 / 37);
-            ctx.moveTo(vo_L.x, vo_L.y); ctx.lineTo(vo_R.x, vo_R.y);
-            let ot_L = getInnerEdge(22.5 / 37); let ot_R = getInnerEdge(10.5 / 37);
-            ctx.moveTo(ot_L.x, ot_L.y); ctx.lineTo(ot_R.x, ot_R.y);
-            let j0_L = getInnerEdge(32.5 / 37); let j0_R = getInnerEdge(2.5 / 37);
-            ctx.moveTo(j0_L.x, j0_L.y); ctx.lineTo(j0_R.x, j0_R.y);
-            
+            let vo_L = getInnerEdge(27.5 / 37); let vo_R = getInnerEdge(7.5 / 37); ctx.moveTo(vo_L.x, vo_L.y); ctx.lineTo(vo_R.x, vo_R.y);
+            let ot_L = getInnerEdge(22.5 / 37); let ot_R = getInnerEdge(10.5 / 37); ctx.moveTo(ot_L.x, ot_L.y); ctx.lineTo(ot_R.x, ot_R.y);
+            let j0_L = getInnerEdge(32.5 / 37); let j0_R = getInnerEdge(2.5 / 37); ctx.moveTo(j0_L.x, j0_L.y); ctx.lineTo(j0_R.x, j0_R.y);
             ctx.strokeStyle = '#374151'; ctx.lineWidth = 1 * pr; ctx.stroke();
 
             zonasHitboxes = [];
@@ -1097,21 +1197,17 @@
 
             zonasHitboxes.forEach(z => {
                 let isActive = (activeZ === z.id);
-                ctx.save();
-                ctx.translate(z.x, z.y);
-                if (orientacionPista === 'H') ctx.rotate(Math.PI/2);
+                ctx.save(); ctx.translate(z.x, z.y); if (orientacionPista === 'H') ctx.rotate(Math.PI/2);
                 
                 if (isActive) {
                     ctx.beginPath(); ctx.arc(0, 0, z.r * (orientacionPista==='H'? 0.5 : 0.8), 0, 2*Math.PI);
                     ctx.fillStyle = '#eab308'; ctx.globalAlpha = 0.2; ctx.fill(); ctx.globalAlpha = 1.0;
                 }
                 
-                ctx.fillStyle = isActive ? '#eab308' : '#6b7280';
-                ctx.shadowBlur = 0;
+                ctx.fillStyle = isActive ? '#eab308' : '#6b7280'; ctx.shadowBlur = 0;
                 let fs = drawW * 0.04; if(z.id === 'HUERFANOS') fs = drawW * 0.035;
                 ctx.font = `bold ${fs}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(z.id, 0, 0);
-                ctx.restore();
+                ctx.fillText(z.id, 0, 0); ctx.restore();
             });
 
             if (orientacionPista === 'H') ctx.restore();
@@ -1124,8 +1220,7 @@
                 ctx.fillStyle = '#ffffff'; ctx.font = `bold ${r * 0.22}px Arial`; ctx.fillText("MACRO", cx, cy + (r * 0.15));
             } else {
                 if (historialTiradas.length > 0) {
-                    let ultObj = historialTiradas[historialTiradas.length - 1];
-                    let l = ultObj.num, d = ultObj.dir;
+                    let ultObj = historialTiradas[historialTiradas.length - 1], l = ultObj.num, d = ultObj.dir;
                     ctx.fillStyle = '#6b7280'; ctx.font = `${r * 0.11}px sans-serif`; ctx.textAlign = 'center'; ctx.fillText("ÚLTIMO", cx, cy - (r * 0.2));
                     ctx.fillStyle = l === 0 ? '#22c55e' : (ROJOS.includes(l) ? '#ef4444' : '#ffffff');
                     ctx.font = `bold ${r * 0.35}px Arial`; ctx.fillText(l.toString(), cx, cy + (r * 0.05));
@@ -1138,3 +1233,4 @@
     </script>
 </body>
 </html>
+
