@@ -8,6 +8,7 @@
     <title>Analizador Predictivo PRO - Ruleta Física</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    
     <style>
         .canvas-wrapper { width: 100%; max-width: 260px; margin: 0 auto; position: relative; }
         .square-container { position: relative; width: 100%; padding-bottom: 100%; border-radius: 50%; }
@@ -35,7 +36,7 @@
         .spinner { border: 2px solid rgba(255, 255, 255, 0.1); border-left-color: #a78bfa; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Muro Legal (Hard Block) */
+        /* Muro Legal y Ads (Hard Block) */
         .hard-block-overlay { background-color: #030712; z-index: 9999; backdrop-filter: blur(10px); }
         .neon-border-blue { box-shadow: 0 0 25px rgba(59, 130, 246, 0.5), inset 0 0 15px rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; }
         .neon-border-purple { box-shadow: 0 0 25px rgba(168, 85, 247, 0.5), inset 0 0 15px rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; }
@@ -86,7 +87,7 @@
             100% { opacity: 0; transform: scale(0.8) translateY(-25px); }
         }
 
-        /* 🌟 Estilos para Paneles Flotantes Arrastrables */
+        /* Paneles Flotantes Arrastrables */
         .drag-handle { cursor: grab; touch-action: none; }
         .drag-handle:active { cursor: grabbing; }
         .fixed-panel {
@@ -101,7 +102,7 @@
         .keypad-scroll::-webkit-scrollbar { width: 4px; }
         .keypad-scroll::-webkit-scrollbar-thumb { background-color: #374151; border-radius: 4px; }
 
-        /* ESTILOS GLASSMORFISMO Y NAVEGACIÓN ACTIVA */
+        /* Estilos Glassmorfismo y Navegación */
         .glass-nav {
             background: rgba(15, 23, 42, 0.65);
             backdrop-filter: blur(16px);
@@ -112,8 +113,47 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen p-3 md:p-6 pb-28 font-sans select-none is-blocked">
 
+    <!-- ========================================== -->
+    <!-- SISTEMA DE ANUNCIOS 3 HORAS (FASE 3)       -->
+    <!-- ========================================== -->
+    <div id="ad-system-overlay" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-[10000] hidden flex-col items-center justify-center p-4">
+        
+        <!-- Fase 1: Aviso de 5 segundos -->
+        <div id="ad-warning" class="bg-gray-900 rounded-3xl border border-yellow-500/50 shadow-[0_0_50px_rgba(234,179,8,0.2)] max-w-md w-full p-8 text-center animate-[slideUpFade_0.4s_ease_forwards] hidden">
+            <h2 class="text-3xl font-extrabold text-yellow-500 mb-4 neon-text-glow">⚠️ AVISO IMPORTANTE</h2>
+            <p class="text-gray-300 text-base mb-6 leading-relaxed">
+                A continuación habrá un <strong>anuncio de 20 segundos</strong> para poder utilizar el software gratuitamente.
+            </p>
+            <div class="inline-flex flex-col items-center justify-center bg-gray-950 border border-gray-700 rounded-2xl px-8 py-4 w-full">
+                <span class="text-gray-500 text-xs uppercase font-bold mb-2">Comenzando en:</span>
+                <span id="ad-warn-timer" class="text-5xl font-mono font-bold text-yellow-400 drop-shadow-md">5</span>
+            </div>
+        </div>
+
+        <!-- Fase 2: Anuncio de 20 segundos y Botón de Salto -->
+        <div id="ad-active" class="bg-gray-900 rounded-3xl border border-blue-500/50 shadow-[0_0_50px_rgba(59,130,246,0.2)] max-w-lg w-full p-8 text-center flex-col items-center animate-[slideUpFade_0.4s_ease_forwards] hidden">
+            <h2 class="text-2xl font-bold text-blue-400 mb-2">Espacio Publicitario</h2>
+            <p class="text-gray-400 text-sm mb-8">Gracias por apoyar el mantenimiento de SectorAnalyzer.</p>
+            
+            <div class="w-full bg-gray-950 border border-gray-800 rounded-2xl p-6 mb-8 flex flex-col items-center justify-center min-h-[160px] shadow-inner">
+                <!-- Spinner Tailwind -->
+                <div class="w-10 h-10 rounded-full border-4 border-gray-800 border-t-blue-500 animate-spin mb-4"></div>
+                <p class="text-sm text-gray-500 italic px-4">El anuncio ha sido cargado en segundo plano y se activará al continuar.</p>
+            </div>
+
+            <div id="ad-wait-container" class="h-20 flex flex-col items-center justify-center w-full">
+                <p id="ad-wait-text" class="text-gray-300">
+                    Podrás saltar el anuncio en <span id="ad-wait-timer" class="text-2xl font-mono font-bold text-red-500 mx-1">20</span> segundos...
+                </p>
+                <button id="btn-skip-ad" onclick="skipAd()" class="hidden w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-6 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.5)] uppercase tracking-widest transition-transform active:scale-95 animate-pulse border border-blue-400">
+                    Saltar Anuncio ➔
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MURO LEGAL DE ACCESO (HARD BLOCK) -->
-    <div id="muro-legal" class="fixed inset-0 hard-block-overlay flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+    <div id="muro-legal" class="fixed inset-0 hard-block-overlay flex flex-col items-center justify-center p-4 transition-opacity duration-500 z-[9999]">
         <div class="bg-gray-900/90 rounded-2xl neon-border-blue max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             <div class="p-6 border-b border-blue-900/50 flex flex-col items-center text-center bg-blue-950/30">
                 <h1 class="text-3xl font-extrabold text-white mb-2 neon-text-glow text-blue-400">⚠️ ADVERTENCIA LEGAL</h1>
@@ -260,7 +300,7 @@
                     </div>
                 </div>
 
-                <!-- 🚀 NUEVO: ASESOR DE TIMING Y DIRECCIÓN -->
+                <!-- 🚀 ASESOR DE TIMING Y DIRECCIÓN -->
                 <div class="prediction-card p-5 rounded-2xl border border-emerald-900/50 relative overflow-hidden shadow-xl mt-6" id="panel-timing">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-green-600"></div>
                     <div class="flex justify-between items-start mb-3">
@@ -505,7 +545,7 @@
                 ⚡ ASISTENTE DE REGISTRO RÁPIDO
             </button>
 
-            <!-- Mini OCR (Boton Actualizado) -->
+            <!-- Mini OCR -->
             <div class="bg-gray-950 p-2 rounded-xl border border-purple-900/50 relative overflow-hidden">
                 <div class="flex flex-col gap-1 relative z-10">
                     <span class="text-[9px] font-bold text-purple-400 uppercase">📸 Escáner OCR (Auto-Completar)</span>
@@ -587,17 +627,103 @@
     </div>
 
     <script>
+        /* LÓGICA DE MONETIZACIÓN: ADS DE 3 HORAS */
+        const AD_COOLDOWN_MS = 3 * 60 * 60 * 1000; // 3 Horas en milisegundos
+
+        function initAdSystem() {
+            const lastAd = localStorage.getItem('SectorAnalyzer_LastAd');
+            const now = Date.now();
+            
+            // Verifica si no hay registro o ya pasaron 3 horas
+            if (!lastAd || (now - parseInt(lastAd)) > AD_COOLDOWN_MS) {
+                // Bloquea temporalmente el flujo y muestra el Ad System
+                document.getElementById('ad-system-overlay').classList.remove('hidden');
+                document.getElementById('ad-system-overlay').classList.add('flex');
+                
+                // Mueve el muro legal por debajo para que el anuncio resalte al frente
+                document.getElementById('muro-legal').style.zIndex = "9998"; 
+                
+                startAdWarning();
+            } else {
+                // Ya vio el anuncio hace poco, pasa directo a verificar términos legales
+                verificarTerminos();
+            }
+        }
+
+        function startAdWarning() {
+            let warnTime = 5;
+            const warnEl = document.getElementById('ad-warn-timer');
+            document.getElementById('ad-warning').classList.remove('hidden');
+            document.getElementById('ad-warning').classList.add('block');
+
+            const interval = setInterval(() => {
+                warnTime--;
+                warnEl.innerText = warnTime;
+                if (warnTime <= 0) {
+                    clearInterval(interval);
+                    startAdPhase();
+                }
+            }, 1000);
+        }
+
+        function startAdPhase() {
+            // Oculta advertencia y muestra Anuncio
+            document.getElementById('ad-warning').classList.remove('block');
+            document.getElementById('ad-warning').classList.add('hidden');
+            
+            document.getElementById('ad-active').classList.remove('hidden');
+            document.getElementById('ad-active').classList.add('flex');
+            
+            // INYECTAR POPUNDER EN ESTE EXACTO MOMENTO
+            if(!document.getElementById('popunder-script-injected')) {
+                (function(tnjwe){
+                    var d = document, s = d.createElement('script'), l = d.scripts[d.scripts.length - 1];
+                    s.id = 'popunder-script-injected';
+                    s.settings = tnjwe || {};
+                    s.src = "\/\/bouncyeffective.com\/cGD.9t6Yb\/2N5-lLSdWNQ_9MN\/zbM\/0LMGjEQVwBMpSx0k3wMyz\/QSy\/NJDhAU1K";
+                    s.async = true;
+                    s.referrerPolicy = 'no-referrer-when-downgrade';
+                    l.parentNode.insertBefore(s, l);
+                })({});
+            }
+
+            let adTime = 20;
+            const waitEl = document.getElementById('ad-wait-timer');
+            const waitTextContainer = document.getElementById('ad-wait-text');
+            const skipBtn = document.getElementById('btn-skip-ad');
+            
+            const interval = setInterval(() => {
+                adTime--;
+                waitEl.innerText = adTime;
+                if (adTime <= 0) {
+                    clearInterval(interval);
+                    waitTextContainer.classList.add('hidden');
+                    skipBtn.classList.remove('hidden');
+                }
+            }, 1000);
+        }
+
+        function skipAd() {
+            // Guardar el tiempo exacto en que saltó el anuncio
+            localStorage.setItem('SectorAnalyzer_LastAd', Date.now().toString());
+            
+            // Ocultar Interfaz de Ad
+            const adSystem = document.getElementById('ad-system-overlay');
+            adSystem.classList.add('hidden');
+            adSystem.classList.remove('flex');
+            
+            // Reanudar el ciclo de vida normal de la app (muro legal)
+            verificarTerminos();
+        }
+
         /* EVENT LISTENER GLOBAL PARA EFECTO SWEEP (Brillo) DE BOTONES */
         document.addEventListener('mousedown', (e) => {
             const btn = e.target.closest('button');
             if(btn) {
-                // Previene bugs si se pulsa muy rápido repetidas veces
                 btn.classList.remove('btn-sweep-active');
-                void btn.offsetWidth; // Dispara un reflow (reinicia la animación)
+                void btn.offsetWidth; // Dispara un reflow
                 btn.classList.add('btn-sweep-active');
-                setTimeout(() => {
-                    if (btn) btn.classList.remove('btn-sweep-active');
-                }, 300);
+                setTimeout(() => { if (btn) btn.classList.remove('btn-sweep-active'); }, 300);
             }
         });
 
@@ -613,7 +739,7 @@
                     scrollTimeoutNav = setTimeout(() => {
                         navPanel.style.transform = 'translateY(0)';
                         navPanel.style.opacity = '1';
-                    }, 400); // 400ms después de que pare el scroll o movimiento
+                    }, 400); 
                 }
             }, { passive: true });
         });
@@ -672,23 +798,21 @@
             }
         });
 
-        /* GESTIÓN DE BLOQUEO LEGAL E INICIO DE DRAGGABLES */
+        /* GESTIÓN DE INICIO Y ACCESO */
         function iniciarApp() {
             if (appInicializada) return;
             try { 
-                verificarTerminos();
                 generarTeclado(); 
-                
-                // Activar modo por defecto para que se pinten los botones de navegación correctos
                 cambiarModo(modoActual); 
-                
                 initPistaEvents(); 
                 
-                // Activar arrastre en los paneles flotantes
                 makeDraggable(document.getElementById('keypad-overlay'), document.getElementById('keypad-drag-handle'));
                 makeDraggable(document.getElementById('macro-panel-overlay'), document.getElementById('macro-drag-handle'));
                 
                 appInicializada = true; 
+                
+                // INICIA EL SISTEMA DE MONETIZACIÓN ANTES QUE EL MURO LEGAL
+                initAdSystem(); 
             } catch (e) { console.error(e); }
         }
 
@@ -697,6 +821,7 @@
                 desbloquearPagina();
             } else {
                 const muro = document.getElementById('muro-legal');
+                muro.style.zIndex = "9999"; // Restaurar z-index
                 muro.classList.remove('opacity-0', 'pointer-events-none');
             }
         }
@@ -705,7 +830,6 @@
             localStorage.setItem('SectorAnalyzer_Aceptado', 'true');
             desbloquearPagina();
             
-            // Si es la primera vez que entra, sugerir el tutorial
             if(!localStorage.getItem('SectorAnalyzer_Tutorial_Visto')) {
                 setTimeout(abrirTutorial, 800);
             }
@@ -726,61 +850,17 @@
 
         /* GESTIÓN DE TUTORIAL ESTILO NEON */
         const pasosTutorial = [
-            {
-                titulo: "🌟 BIENVENIDO A SECTOR ANALYZER",
-                texto: "La herramienta matemática más avanzada para analizar la ruleta mediante entropía física y desviaciones estadísticas.",
-                color: "purple"
-            },
-            {
-                titulo: "📲 PANEL DE NAVEGACIÓN",
-                texto: "Usa el <b>panel flotante inferior</b> para cambiar de modo de análisis de forma rápida. Éste se ocultará automáticamente al deslizar la página (hacer scroll) para no molestarte y aparecerá cuando te detengas.",
-                color: "teal"
-            },
-            {
-                titulo: "🎯 MODO TIRADAS (EXACTO)",
-                texto: "Actívalo presionando <b>🎯 TIRADAS</b>. Registra cada número que sale. Ideal para analizar la biometría del crupier (fuerza, postura) y descubrir si tiene una zona de caída repetitiva (Memoria Muscular).",
-                color: "blue"
-            },
-            {
-                titulo: "⚙️ PERFIL FÍSICO DE LA MESA",
-                texto: "Tanto en Tiradas como en Gráficos, ajusta el <b>Perfil Físico</b>. Si es ruleta Manual, define el sexo y postura del crupier; esto ajusta la ventana de dispersión de nuestro algoritmo basándose en la fuerza humana promedio. Si es Automática, la dispersión analizada será más cerrada.",
-                color: "blue"
-            },
-            {
-                titulo: "⚡ IMPORTACIÓN RÁPIDA",
-                texto: "Para no teclear 1 por 1:<br>- <b>Tiradas:</b> Pega números separados por comas o usa el <b>Escáner OCR</b> para leer una captura de pantalla.<br>- <b>Gráficos:</b> Usa el Escáner para leer los porcentajes de golpe, o el <b>Asistente de Registro Rápido</b> para teclearlos velozmente.",
-                color: "teal"
-            },
-            {
-                titulo: "🕹️ BOTONES FLOTANTES SUPERPUESTOS",
-                texto: "Observa los botones en la parte inferior derecha: <br>El botón <b>🔢 (Azul)</b> abre el teclado rápido para el Modo Tiradas.<br>El botón <b>📊 (Morado)</b> abre el panel de captura de estadísticas para el Modo Gráficos. Puedes arrastrarlos por la pantalla.",
-                color: "purple"
-            },
-            {
-                titulo: "📊 MODO GRÁFICOS (MACRO)",
-                texto: "Actívalo presionando <b>📊 GRÁFICOS</b> en el panel inferior. Usa los porcentajes que muestra el casino en su pantalla. Calcula intersecciones ocultas de desviaciones matemáticas para encontrar sectores 'calientes'.",
-                color: "purple"
-            },
-            {
-                titulo: "🎯 SECCIONES Y RESULTADOS",
-                texto: "<b>Secciones Más Probables:</b> Muestra el Clúster Balístico principal donde caerá la bola según la inercia (Modo Exacto).<br><b>Resultados de Intersección:</b> Cruza todas las estadísticas Macro y te muestra los números individuales con mayor calor acumulado.",
-                color: "green"
-            },
-            {
-                titulo: "⏱️ TIMING ESTRATÉGICO AI",
-                texto: "El panel de <b>Timing Estratégico AI</b> evalúa la dirección óptima de lanzamiento. Te indicará hacia qué lado el crupier es más predecible (EV+) y si debes apostar o esperar a la siguiente ronda.",
-                color: "teal"
-            },
-            {
-                titulo: "🔥 MAPA BALÍSTICO",
-                texto: "Visualiza la intensidad térmica en tiempo real. <b>Rojo/Rosa brillante</b> indica la mayor concentración de probabilidad balística para el próximo giro.",
-                color: "blue"
-            },
-            {
-                titulo: "🤖 ASESOR IA (SIN SERVIDORES)",
-                texto: "Haz clic en 'Analizar Mesa' para que nuestra IA local lea las anomalías. Si alguna vez necesitas ver esta guía nuevamente, simplemente presiona el botón circular <b>💡 TUTORIAL</b> que está en el centro del panel inferior.",
-                color: "green"
-            }
+            { titulo: "🌟 BIENVENIDO A SECTOR ANALYZER", texto: "La herramienta matemática más avanzada para analizar la ruleta mediante entropía física y desviaciones estadísticas.", color: "purple" },
+            { titulo: "📲 PANEL DE NAVEGACIÓN", texto: "Usa el <b>panel flotante inferior</b> para cambiar de modo de análisis de forma rápida. Éste se ocultará automáticamente al deslizar la página (hacer scroll) para no molestarte y aparecerá cuando te detengas.", color: "teal" },
+            { titulo: "🎯 MODO TIRADAS (EXACTO)", texto: "Actívalo presionando <b>🎯 TIRADAS</b>. Registra cada número que sale. Ideal para analizar la biometría del crupier (fuerza, postura) y descubrir si tiene una zona de caída repetitiva (Memoria Muscular).", color: "blue" },
+            { titulo: "⚙️ PERFIL FÍSICO DE LA MESA", texto: "Tanto en Tiradas como en Gráficos, ajusta el <b>Perfil Físico</b>. Si es ruleta Manual, define el sexo y postura del crupier; esto ajusta la ventana de dispersión de nuestro algoritmo basándose en la fuerza humana promedio. Si es Automática, la dispersión analizada será más cerrada.", color: "blue" },
+            { titulo: "⚡ IMPORTACIÓN RÁPIDA", texto: "Para no teclear 1 por 1:<br>- <b>Tiradas:</b> Pega números separados por comas o usa el <b>Escáner OCR</b> para leer una captura de pantalla.<br>- <b>Gráficos:</b> Usa el Escáner para leer los porcentajes de golpe, o el <b>Asistente de Registro Rápido</b> para teclearlos velozmente.", color: "teal" },
+            { titulo: "🕹️ BOTONES FLOTANTES SUPERPUESTOS", texto: "Observa los botones en la parte inferior derecha: <br>El botón <b>🔢 (Azul)</b> abre el teclado rápido para el Modo Tiradas.<br>El botón <b>📊 (Morado)</b> abre el panel de captura de estadísticas para el Modo Gráficos. Puedes arrastrarlos por la pantalla.", color: "purple" },
+            { titulo: "📊 MODO GRÁFICOS (MACRO)", texto: "Actívalo presionando <b>📊 GRÁFICOS</b> en el panel inferior. Usa los porcentajes que muestra el casino en su pantalla. Calcula intersecciones ocultas de desviaciones matemáticas para encontrar sectores 'calientes'.", color: "purple" },
+            { titulo: "🎯 SECCIONES Y RESULTADOS", texto: "<b>Secciones Más Probables:</b> Muestra el Clúster Balístico principal donde caerá la bola según la inercia (Modo Exacto).<br><b>Resultados de Intersección:</b> Cruza todas las estadísticas Macro y te muestra los números individuales con mayor calor acumulado.", color: "green" },
+            { titulo: "⏱️ TIMING ESTRATÉGICO AI", texto: "El panel de <b>Timing Estratégico AI</b> evalúa la dirección óptima de lanzamiento. Te indicará hacia qué lado el crupier es más predecible (EV+) y si debes apostar o esperar a la siguiente ronda.", color: "teal" },
+            { titulo: "🔥 MAPA BALÍSTICO", texto: "Visualiza la intensidad térmica en tiempo real. <b>Rojo/Rosa brillante</b> indica la mayor concentración de probabilidad balística para el próximo giro.", color: "blue" },
+            { titulo: "🤖 ASESOR IA (SIN SERVIDORES)", texto: "Haz clic en 'Analizar Mesa' para que nuestra IA local lea las anomalías. Si alguna vez necesitas ver esta guía nuevamente, simplemente presiona el botón circular <b>💡 TUTORIAL</b> que está en el centro del panel inferior.", color: "green" }
         ];
         let pasoActualTutorial = 0;
 
@@ -801,7 +881,6 @@
             const container = document.getElementById('tut-content');
             const data = pasosTutorial[pasoActualTutorial];
             
-            // Asignación de colores
             let borderClass = 'border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.4)]';
             if(data.color === 'purple') borderClass = 'neon-border-purple';
             if(data.color === 'green') borderClass = 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]';
@@ -831,12 +910,10 @@
             `;
         }
 
-        /* INICIALIZACIÓN */
-        iniciarApp(); 
+        // INIT DOM
         document.addEventListener('DOMContentLoaded', iniciarApp);
         window.addEventListener('resize', () => { if(appInicializada) dibujarMapas(); });
 
-        /* NAVEGACIÓN Y MODOS */
         function switchVistaMap(vista) {
             vistaActualMap = vista;
             document.getElementById('cilindro-wrapper').classList.toggle('hidden', vista !== 'cilindro');
@@ -857,13 +934,9 @@
             const wrapper = document.getElementById('pista-wrapper');
             const btn = document.getElementById('btn-ori-pista');
             if (orientacionPista === 'H') {
-                wrapper.classList.remove('racetrack-v');
-                wrapper.classList.add('racetrack-h');
-                btn.innerText = '⟳ VERTICAL';
+                wrapper.classList.remove('racetrack-v'); wrapper.classList.add('racetrack-h'); btn.innerText = '⟳ VERTICAL';
             } else {
-                wrapper.classList.remove('racetrack-h');
-                wrapper.classList.add('racetrack-v');
-                btn.innerText = '⟳ HORIZONTAL';
+                wrapper.classList.remove('racetrack-h'); wrapper.classList.add('racetrack-v'); btn.innerText = '⟳ HORIZONTAL';
             }
             dibujarMapas();
         }
@@ -871,48 +944,38 @@
         function cambiarModo(modo) {
             modoActual = modo;
             
-            // Control visual de los paneles principales
             document.getElementById('panel-exacto').classList.toggle('hidden', modo !== 'exacto');
             document.getElementById('panel-exacto').classList.toggle('flex', modo === 'exacto');
             document.getElementById('panel-macro').classList.toggle('hidden', modo === 'exacto');
             document.getElementById('panel-macro').classList.toggle('flex', modo !== 'exacto');
             document.getElementById('macro-overlay').classList.toggle('hidden', modo === 'exacto');
             
-            // Alternar los botones flotantes de entrada de datos (mitad de pantalla)
             document.getElementById('btn-toggle-keypad').classList.toggle('hidden', modo !== 'exacto');
             document.getElementById('btn-toggle-macro-panel').classList.toggle('hidden', modo !== 'macro');
 
-            // Asegurarnos que los mini paneles flotantes se oculten si no están en su modo
             if(modo !== 'exacto') document.getElementById('keypad-overlay').classList.add('hidden-panel');
             if(modo !== 'macro') document.getElementById('macro-panel-overlay').classList.add('hidden-panel');
 
-            // --- LÓGICA DEL NUEVO PANEL DE NAVEGACIÓN INFERIOR ---
-            const btnExacto = document.getElementById('nav-btn-exacto');
-            const btnMacro = document.getElementById('nav-btn-macro');
+            const btnExacto = document.getElementById('nav-btn-exacto'), btnMacro = document.getElementById('nav-btn-macro');
             
             if (modo === 'exacto') {
-                btnExacto.classList.add('nav-active');
-                btnExacto.classList.remove('opacity-60');
+                btnExacto.classList.add('nav-active'); btnExacto.classList.remove('opacity-60');
                 btnExacto.querySelector('div').className = "w-11 h-11 rounded-2xl flex items-center justify-center text-xl bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)] border border-blue-400 transition-colors";
                 btnExacto.querySelector('span').className = "text-[9px] font-bold text-blue-300 mt-1.5 transition-colors";
 
-                btnMacro.classList.remove('nav-active');
-                btnMacro.classList.add('opacity-60');
+                btnMacro.classList.remove('nav-active'); btnMacro.classList.add('opacity-60');
                 btnMacro.querySelector('div').className = "w-11 h-11 rounded-2xl flex items-center justify-center text-xl bg-gray-800/80 border border-gray-700 transition-colors";
                 btnMacro.querySelector('span').className = "text-[9px] font-bold text-gray-400 mt-1.5 transition-colors";
             } else {
-                btnMacro.classList.add('nav-active');
-                btnMacro.classList.remove('opacity-60');
+                btnMacro.classList.add('nav-active'); btnMacro.classList.remove('opacity-60');
                 btnMacro.querySelector('div').className = "w-11 h-11 rounded-2xl flex items-center justify-center text-xl bg-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.5)] border border-purple-400 transition-colors";
                 btnMacro.querySelector('span').className = "text-[9px] font-bold text-purple-300 mt-1.5 transition-colors";
 
-                btnExacto.classList.remove('nav-active');
-                btnExacto.classList.add('opacity-60');
+                btnExacto.classList.remove('nav-active'); btnExacto.classList.add('opacity-60');
                 btnExacto.querySelector('div').className = "w-11 h-11 rounded-2xl flex items-center justify-center text-xl bg-gray-800/80 border border-gray-700 transition-colors";
                 btnExacto.querySelector('span').className = "text-[9px] font-bold text-gray-400 mt-1.5 transition-colors";
             }
 
-            // Cambios estéticos del Termal Legend
             if (modo === 'macro') {
                 document.getElementById('termal-legend').style.background = 'linear-gradient(to right, rgb(15,15,30), rgb(0,200,255), rgb(100,100,255), rgb(200,50,255), rgb(255,0,255))';
                 document.getElementById('termal-hot-text').style.color = 'rgb(255,0,255)';
@@ -921,19 +984,17 @@
                 document.getElementById('termal-hot-text').style.color = 'rgb(255,0,0)';
             }
 
-            // Procesos del motor
             if (modo === 'exacto') {
                 actualizarUIExacto(); 
             } else if(document.getElementById('macro-results').classList.contains('hidden')) {
                 estadisticasCalculadas = []; zonasCalientes = []; dibujarMapas();
                 document.getElementById('prediction-list').innerHTML = `<div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700 text-center text-gray-500 text-[11px]">Pulsa "Actualizar y Analizar" para procesar.</div>`;
-                document.getElementById('timing-output-container').classList.add('hidden'); // Ocultar panel timing al reiniciar modo
+                document.getElementById('timing-output-container').classList.add('hidden');
             } else {
                 calcularPrediccionMacro();
             }
         }
 
-        /* GESTIÓN DE PERFILES */
         function setPerfil(c, v) {
             perfilFisicoExacto[c] = v;
             const bA = "flex-1 text-xs py-1 rounded border border-gray-600 bg-blue-600 text-white font-bold transition-colors", bI = "flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors";
@@ -995,16 +1056,8 @@
             document.getElementById('tab-import-img').className = tab === 'img' ? "px-3 py-1 text-xs font-bold border-b-2 border-blue-500 text-blue-400" : "px-3 py-1 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-gray-300";
         }
 
-        /* INGRESO DE DATOS - TECLADO FLOTANTE */
-        function toggleKeypad() {
-            const keypad = document.getElementById('keypad-overlay');
-            keypad.classList.toggle('hidden-panel');
-        }
-
-        function toggleMacroPanel() {
-            const panel = document.getElementById('macro-panel-overlay');
-            panel.classList.toggle('hidden-panel');
-        }
+        function toggleKeypad() { document.getElementById('keypad-overlay').classList.toggle('hidden-panel'); }
+        function toggleMacroPanel() { document.getElementById('macro-panel-overlay').classList.toggle('hidden-panel'); }
 
         function generarTeclado() {
             const pad = document.getElementById('number-pad');
@@ -1030,26 +1083,15 @@
         function mostrarNumeroFlotante(n) {
             const overlay = document.getElementById('map-history-overlay');
             if(!overlay) return;
-            
             const span = document.createElement('span');
             const isRed = ROJOS.includes(n);
-            const isGreen = n === 0;
-            const bgClass = isGreen ? 'bg-green-600' : (isRed ? 'bg-red-600' : 'bg-gray-800 border border-gray-600');
+            const bgClass = n === 0 ? 'bg-green-600' : (isRed ? 'bg-red-600' : 'bg-gray-800 border border-gray-600');
             
             span.className = `w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold text-white shadow-lg floating-num flex-shrink-0 text-xs sm:text-sm ${bgClass}`;
             span.innerText = n;
-            
             overlay.appendChild(span);
-            
-            if(overlay.children.length > 6) {
-                overlay.removeChild(overlay.firstChild);
-            }
-
-            setTimeout(() => {
-                if (span.parentNode === overlay) {
-                    overlay.removeChild(span);
-                }
-            }, 2500);
+            if(overlay.children.length > 6) overlay.removeChild(overlay.firstChild);
+            setTimeout(() => { if (span.parentNode === overlay) overlay.removeChild(span); }, 2500);
         }
 
         function deshacerTirada() { if (historialTiradas.length > 0) { historialTiradas.pop(); alternarDireccion(); actualizarUIExacto(); } }
@@ -1073,7 +1115,6 @@
             const fileInput = document.getElementById('image-upload');
             const statusPanel = document.getElementById('ocr-status');
             const btnOcr = document.getElementById('btn-ocr');
-            
             const files = Array.from(fileInput.files).sort((a, b) => a.name.localeCompare(b.name));
             
             if (files.length === 0) return;
@@ -1085,10 +1126,8 @@
                 for (let i = 0; i < files.length; i++) {
                     statusPanel.innerHTML = `Escaneando captura ${i+1} de ${files.length}...<br><span class="animate-pulse text-blue-400">⏳ Procesando OCR Avanzado...</span>`;
                     const { data: { text } } = await Tesseract.recognize(files[i], 'eng');
-                    
                     let cleanText = text.replace(/x\d+/gi, ' ').replace(/\d+x/gi, ' ');
                     const numsEnTexto = cleanText.match(/\b\d+\b/g);
-                    
                     if (numsEnTexto) {
                         numsEnTexto.forEach(n => { 
                             let num = parseInt(n, 10); 
@@ -1149,19 +1188,10 @@
                 };
 
                 let vals = {
-                    red: findNearKeyword(["rojo", "red", "r"]),
-                    black: findNearKeyword(["negro", "black", "b", "blk"]),
-                    green: findNearKeyword(["verde", "green", "cero", "zero", "0"]),
-                    even: findNearKeyword(["par", "even"]),
-                    odd: findNearKeyword(["impar", "odd"]),
-                    low: findNearKeyword(["1-18", "1 a 18", "low", "bajos"]),
-                    high: findNearKeyword(["19-36", "19 a 36", "high", "altos"]),
-                    col1: findNearKeyword(["1st col", "1ra col", "col 1", "1stc", "columna 1", "1ra"]),
-                    col2: findNearKeyword(["2nd col", "2da col", "col 2", "2ndc", "columna 2", "2da"]),
-                    col3: findNearKeyword(["3rd col", "3ra col", "col 3", "3rdc", "columna 3", "3ra"]),
-                    doz1: findNearKeyword(["1st doz", "1ra doc", "docena 1", "1-12", "1std", "1st 12"]),
-                    doz2: findNearKeyword(["2nd doz", "2da doc", "docena 2", "13-24", "2ndd", "2nd 12"]),
-                    doz3: findNearKeyword(["3rd doz", "3ra doc", "docena 3", "25-36", "3rdd", "3rd 12"])
+                    red: findNearKeyword(["rojo", "red", "r"]), black: findNearKeyword(["negro", "black", "b", "blk"]), green: findNearKeyword(["verde", "green", "cero", "zero", "0"]),
+                    even: findNearKeyword(["par", "even"]), odd: findNearKeyword(["impar", "odd"]), low: findNearKeyword(["1-18", "1 a 18", "low", "bajos"]), high: findNearKeyword(["19-36", "19 a 36", "high", "altos"]),
+                    col1: findNearKeyword(["1st col", "1ra col", "col 1", "1stc", "columna 1", "1ra"]), col2: findNearKeyword(["2nd col", "2da col", "col 2", "2ndc", "columna 2", "2da"]), col3: findNearKeyword(["3rd col", "3ra col", "col 3", "3rdc", "columna 3", "3ra"]),
+                    doz1: findNearKeyword(["1st doz", "1ra doc", "docena 1", "1-12", "1std", "1st 12"]), doz2: findNearKeyword(["2nd doz", "2da doc", "docena 2", "13-24", "2ndd", "2nd 12"]), doz3: findNearKeyword(["3rd doz", "3ra doc", "docena 3", "25-36", "3rdd", "3rd 12"])
                 };
                 
                 let foundCount = Object.values(vals).filter(v => v !== null).length;
@@ -1194,18 +1224,10 @@
                     }
                     
                     if (validNums.length >= 13) {
-                         document.getElementById('mac-red').value = validNums[0];
-                         document.getElementById('mac-black').value = validNums[1];
-                         document.getElementById('mac-green').value = validNums[2];
-                         document.getElementById('mac-even').value = validNums[3];
-                         document.getElementById('mac-odd').value = validNums[4];
-                         document.getElementById('mac-low').value = validNums[5];
-                         document.getElementById('mac-high').value = validNums[6];
-                         document.getElementById('mac-col1').value = validNums[7];
-                         document.getElementById('mac-col2').value = validNums[8];
-                         document.getElementById('mac-col3').value = validNums[9];
-                         document.getElementById('mac-doz1').value = validNums[10];
-                         document.getElementById('mac-doz2').value = validNums[11];
+                         document.getElementById('mac-red').value = validNums[0]; document.getElementById('mac-black').value = validNums[1]; document.getElementById('mac-green').value = validNums[2];
+                         document.getElementById('mac-even').value = validNums[3]; document.getElementById('mac-odd').value = validNums[4]; document.getElementById('mac-low').value = validNums[5];
+                         document.getElementById('mac-high').value = validNums[6]; document.getElementById('mac-col1').value = validNums[7]; document.getElementById('mac-col2').value = validNums[8];
+                         document.getElementById('mac-col3').value = validNums[9]; document.getElementById('mac-doz1').value = validNums[10]; document.getElementById('mac-doz2').value = validNums[11];
                          document.getElementById('mac-doz3').value = validNums[12];
                          
                          statusPanel.innerHTML = `✅ Mapeo secuencial aplicado exitosamente (${validNums.length} valores en orden).`;
@@ -1218,10 +1240,8 @@
                          statusPanel.className = "mt-2 bg-gray-900 p-2 rounded border border-red-800 text-xs font-mono text-red-400 text-center relative z-10";
                     }
                 }
-                
                 setTimeout(() => { statusPanel.classList.add('hidden'); fileInput.value = ""; }, 6000);
             } catch (err) {
-                console.error(err);
                 statusPanel.innerHTML = `❌ Fallo en OCR. Verifica la imagen e intenta de nuevo.`;
                 statusPanel.className = "mt-2 bg-gray-900 p-2 rounded border border-red-800 text-xs font-mono text-red-400 text-center relative z-10";
             } finally { 
@@ -1229,7 +1249,6 @@
             }
         }
 
-        /* LÓGICA CORE EXACTO */
         function actualizarUIExacto() {
             const total = historialTiradas.length;
             let conteo = {}; RUEDA_EUROPEA.forEach(n => conteo[n] = 0);
@@ -1275,7 +1294,6 @@
             }
         }
 
-        /* LÓGICA CORE MACRO */
         function getPropiedades(n) { if (n === 0) return { color: 'green', par: null, mitad: null, col: null, doz: null }; return { color: ROJOS.includes(n) ? 'red' : 'black', par: n % 2 === 0 ? 'even' : 'odd', mitad: n <= 18 ? 'low' : 'high', col: n % 3 === 0 ? 3 : n % 3, doz: Math.ceil(n / 12) }; }
         function obtenerValorInput(id) { return parseFloat(document.getElementById(id).value) || 0; }
         
@@ -1328,7 +1346,6 @@
             });
         }
 
-        /* CLUSTERIZACIÓN Y RENDERING */
         function analizarClusteresFisicos(perfilActivo) {
             zonasCalientes = []; let sectores = [];
             let ventana = 5; if (perfilActivo.tipo === 'auto') ventana = 3; else { if (perfilActivo.postura === 'pie' || perfilActivo.sexo === 'hombre') ventana = 7; }
@@ -1370,7 +1387,6 @@
             });
         }
 
-        /* ASESOR IA (FRONTEND) */
         async function solicitarAnalisisIA() {
             const btn = document.getElementById('btn-ai-trigger');
             const container = document.getElementById('ai-output-container');
@@ -1437,7 +1453,6 @@
             }, 1800); 
         }
 
-        /* 🚀 NUEVO: LÓGICA DE TIMING ESTRATÉGICO CON IA LOCAL */
         async function solicitarAnalisisTiming() {
             const btn = document.getElementById('btn-timing-trigger');
             const container = document.getElementById('timing-output-container');
@@ -1534,7 +1549,6 @@
             `;
         }
 
-        /* GRÁFICOS Y CANVA */
         function initPistaEvents() {
             if (window.pistaEventsAdded) return;
             const canvas = document.getElementById('pistaCanvas');
@@ -1774,9 +1788,6 @@
             }
         }
 
-        /* 🚀 LÓGICA DE DRAGGABLES Y ASISTENTE (WIZARD) */
-        
-        // 1. Motor de Arrastre (Mouse & Touch)
         function makeDraggable(element, handle) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             if (handle) {
@@ -1819,7 +1830,6 @@
             }
         }
 
-        // 2. Asistente de Registro Rápido (Wizard)
         const wizardSteps = [
             { id: 'mac-red', label: 'Rojo/Red' }, { id: 'mac-black', label: 'Negro/Black' }, { id: 'mac-green', label: 'Verde/Green (0)' },
             { id: 'mac-even', label: 'Par/Even' }, { id: 'mac-odd', label: 'Impar/Odd' }, { id: 'mac-low', label: '1 al 18 (Low)' },
@@ -1833,18 +1843,14 @@
             document.getElementById('wizard-overlay').classList.remove('hidden');
             document.getElementById('wizard-overlay').classList.add('flex');
             
-            // Ocultamos el panel macro un momento si molesta
             document.getElementById('macro-panel-overlay').classList.add('hidden-panel');
-            
             showWizardStep();
         }
 
         function showWizardStep() {
             if (currentWizardStep >= wizardSteps.length) {
                 closeWizard();
-                calcularPrediccionMacro(); // Auto-calcula al terminar
-                
-                // Volvemos a mostrar el panel por si el usuario quiere ver los inputs
+                calcularPrediccionMacro(); 
                 document.getElementById('macro-panel-overlay').classList.remove('hidden-panel');
                 return;
             }
@@ -1856,16 +1862,13 @@
             const input = document.getElementById('wizard-input');
             input.value = document.getElementById(step.id).value || ''; 
             
-            // Dar focus automático después de un tick para que funcione el teclado en móviles
             setTimeout(() => { input.focus(); input.select(); }, 50);
         }
 
         function nextWizardStep() {
             const step = wizardSteps[currentWizardStep];
             const val = document.getElementById('wizard-input').value;
-            
             if(val !== '') document.getElementById(step.id).value = val;
-            
             currentWizardStep++;
             showWizardStep();
         }
@@ -1875,7 +1878,6 @@
             document.getElementById('wizard-overlay').classList.remove('flex');
             document.getElementById('macro-panel-overlay').classList.remove('hidden-panel');
         }
-
     </script>
 </body>
 </html>
