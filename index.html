@@ -249,11 +249,21 @@
                 <!-- 🚀 NUEVO: ASESOR DE TIMING Y DIRECCIÓN -->
                 <div class="prediction-card p-5 rounded-2xl border border-emerald-900/50 relative overflow-hidden shadow-xl mt-6" id="panel-timing">
                     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-green-600"></div>
-                    <h2 class="text-lg font-bold text-white mb-1 flex items-center gap-2">⏱️ Timing Estratégico (Punto de Entrada)</h2>
-                    <p class="text-[11px] text-gray-400 mb-4">Calcula la dirección de ruleta más favorable y los giros de espera para asegurar que la gráfica de ganancias (EV+) suba a pesar de caídas.</p>
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">⏱️ Timing Estratégico AI</h2>
+                            <p class="text-[11px] text-gray-400 mt-1">Punto de entrada óptimo (EV+).</p>
+                        </div>
+                        <button onclick="solicitarAnalisisTiming()" id="btn-timing-trigger" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.4)] flex items-center gap-2">
+                            <span>Evaluar Timing</span>
+                        </button>
+                    </div>
                     
-                    <div id="timing-content" class="bg-black/40 rounded-xl p-3 border border-emerald-900/30">
-                        <div class="text-center text-gray-500 text-[11px] py-2">Esperando datos de la mesa para calcular el punto de entrada...</div>
+                    <div id="timing-output-container" class="bg-black/40 rounded-xl p-4 border border-emerald-900/50 hidden">
+                        <div id="timing-loading" class="hidden text-center py-2 text-emerald-300 text-xs font-mono">
+                            <span class="spinner mr-2" style="border-left-color: #34d399;"></span> Calculando ventaja matemática...
+                        </div>
+                        <div id="timing-report" class="ai-text"></div>
                     </div>
                 </div>
 
@@ -861,7 +871,7 @@
             } else if(document.getElementById('macro-results').classList.contains('hidden')) {
                 estadisticasCalculadas = []; zonasCalientes = []; dibujarMapas();
                 document.getElementById('prediction-list').innerHTML = `<div class="bg-gray-800/80 p-3 rounded-lg border border-gray-700 text-center text-gray-500 text-[11px]">Pulsa "Actualizar y Analizar" para procesar.</div>`;
-                renderTimingAdvisor('macro');
+                document.getElementById('timing-output-container').classList.add('hidden'); // Ocultar panel timing al reiniciar modo
             } else {
                 calcularPrediccionMacro();
             }
@@ -1149,90 +1159,6 @@
             }
         }
 
-        /* 🚀 NUEVO: LÓGICA DE TIMING ESTRATÉGICO */
-        function renderTimingAdvisor(modo) {
-            const container = document.getElementById('timing-content');
-            if (!container) return;
-
-            if (zonasCalientes.length === 0) {
-                container.innerHTML = `<div class="text-center text-gray-500 text-[11px] py-2">Mesa sin sesgo claro o recolectando datos para calcular el punto de entrada óptimo...</div>`;
-                return;
-            }
-
-            let dirOptima = 'CW';
-            let waitSpins = 0;
-            let sectorObj = zonasCalientes[0].centro;
-            let razon = "";
-            let winRateMsg = "";
-
-            if (modo === 'exacto') {
-                if (historialTiradas.length < 12) {
-                    container.innerHTML = `<div class="text-center text-gray-500 text-[11px] py-2">Calibrando inercia del crupier... (Faltan ${12 - historialTiradas.length} giros)</div>`;
-                    return;
-                }
-                // Contar cuántos aciertos hay en el clúster caliente para cada dirección
-                let hitsCW = 0, hitsCCW = 0;
-                let topZoneNums = zonasCalientes[0].numeros;
-                historialTiradas.forEach(t => {
-                    if (topZoneNums.includes(t.num)) {
-                        if (t.dir === 'CW') hitsCW++;
-                        else hitsCCW++;
-                    }
-                });
-
-                if (hitsCW >= hitsCCW) {
-                    dirOptima = 'CW';
-                    razon = "El crupier muestra una menor dispersión y mayor acierto en el sector cuando gira el rotor hacia la derecha.";
-                } else {
-                    dirOptima = 'CCW';
-                    razon = "Se detectó que el péndulo físico de la bola cierra más preciso en el sector cuando el giro es hacia la izquierda.";
-                }
-
-                // Cálculo de espera asumiendo que el crupier alterna
-                let nextDir = direccionActualBola; // La dirección del SIGUIENTE giro
-                if (nextDir === dirOptima) {
-                    waitSpins = 0;
-                } else {
-                    waitSpins = 1;
-                }
-                winRateMsg = `Probabilidad de Entrada: ${Math.max(51, 40 + ((Math.max(hitsCW, hitsCCW)/historialTiradas.length)*300)).toFixed(1)}%`;
-
-            } else {
-                // MODO MACRO (Al no haber historial exacto, asumimos la alternancia natural del crupier/máquina)
-                dirOptima = direccionMacro === 'CW' ? 'CCW' : 'CW'; // Si la última fue a la derecha, se aconseja atacar el cruce a la izquierda
-                waitSpins = 0; // Asumiendo que el siguiente giro es el alterno
-                razon = "En macroestadística, se recomienda entrar en el cruce de entropía a favor del giro alterno para cortar rachas negativas de varianza.";
-                let maxD = estadisticasCalculadas.reduce((max, s) => s.desviacion > max ? s.desviacion : max, 0);
-                winRateMsg = `Tasa de Éxito Proyectada: ${Math.min(95, 45 + (maxD * 5)).toFixed(1)}%`;
-            }
-
-            let dirStr = dirOptima === 'CW' ? '↻ HORARIA (Der)' : '↺ ANTIHORARIA (Izq)';
-            let dirColor = dirOptima === 'CW' ? 'text-blue-400' : 'text-purple-400';
-            let waitStr = waitSpins === 0 ? '<span class="text-green-400 font-bold">APOSTAR AHORA</span> (0 giros)' : `<span class="text-yellow-400 font-bold">ESPERAR ${waitSpins} GIRO</span>`;
-
-            container.innerHTML = `
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div class="bg-gray-950 p-2 rounded-lg border border-gray-800 flex flex-col items-center text-center shadow-inner">
-                        <span class="text-[9px] text-gray-500 uppercase font-bold mb-1 border-b border-gray-800 pb-1">Dirección Óptima</span>
-                        <span class="text-xs sm:text-sm font-extrabold ${dirColor} mt-1">${dirStr}</span>
-                    </div>
-                    <div class="bg-gray-950 p-2 rounded-lg border border-gray-800 flex flex-col items-center text-center shadow-inner">
-                        <span class="text-[9px] text-gray-500 uppercase font-bold mb-1 border-b border-gray-800 pb-1">Timing (Espera)</span>
-                        <span class="text-xs mt-1">${waitStr}</span>
-                    </div>
-                </div>
-                <div class="bg-gray-800/50 p-2.5 rounded border border-gray-700">
-                    <p class="text-[10px] sm:text-xs text-gray-300 leading-tight mb-2"><strong>🎯 Acción Sugerida:</strong> Cuando el crupier tire en dirección <strong class="${dirColor}">${dirStr}</strong>, ataca el sector del <strong>${sectorObj}</strong>.</p>
-                    <p class="text-[9px] sm:text-[10px] text-gray-400 leading-tight"><strong>🧠 Motivo Matemático:</strong> ${razon}</p>
-                    <div class="mt-2 pt-2 border-t border-gray-700 flex justify-between items-center">
-                        <span class="text-[9px] sm:text-[10px] text-emerald-400 font-mono font-bold">${winRateMsg}</span>
-                        <span class="text-[8px] sm:text-[9px] text-gray-400 font-mono bg-gray-950 px-2 py-0.5 rounded border border-gray-800">CÁLCULO EV+ (Curva Ascendente)</span>
-                    </div>
-                </div>
-            `;
-        }
-
-
         /* LÓGICA CORE EXACTO */
         function actualizarUIExacto() {
             const total = historialTiradas.length;
@@ -1275,9 +1201,6 @@
                 ind.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span> ACTIVO`; ind.className = "text-[10px] font-bold text-green-400 flex items-center gap-1 bg-gray-950 px-2 py-1 rounded border border-gray-800";
                 renderizarSectores(list, false);
             }
-
-            // Actualizar el módulo de Timing
-            renderTimingAdvisor('exacto');
         }
 
         /* LÓGICA CORE MACRO */
@@ -1330,9 +1253,6 @@
                 const n = stat.numero;
                 container.innerHTML += `<div class="flex flex-col items-center justify-center bg-gray-900 p-1.5 rounded-lg border border-gray-700 w-12 shadow-md"><span class="w-7 h-7 flex items-center justify-center rounded-full font-bold text-white text-xs border border-gray-600 ${n===0?'bg-green-700':(ROJOS.includes(n)?'bg-red-700':'bg-gray-800')}">${n}</span><span class="text-[9px] text-gray-400 mt-1">H. ${(stat.desviacion>0?'+':'')}${stat.desviacion.toFixed(1)}</span></div>`;
             });
-
-            // Actualizar el módulo de Timing
-            renderTimingAdvisor('macro');
         }
 
         /* CLUSTERIZACIÓN Y RENDERING */
@@ -1442,6 +1362,103 @@
                 loading.classList.add('hidden'); report.innerHTML = aiText;
                 btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed');
             }, 1800); 
+        }
+
+        /* 🚀 NUEVO: LÓGICA DE TIMING ESTRATÉGICO CON IA LOCAL */
+        async function solicitarAnalisisTiming() {
+            const btn = document.getElementById('btn-timing-trigger');
+            const container = document.getElementById('timing-output-container');
+            const loading = document.getElementById('timing-loading');
+            const report = document.getElementById('timing-report');
+
+            if (modoActual === 'exacto' && historialTiradas.length < 12) {
+                container.classList.remove('hidden'); loading.classList.add('hidden');
+                report.innerHTML = `<span class="text-red-400">⚠️ Se requieren al menos 12 tiradas para modelar el timing de entrada.</span>`; return;
+            } else if (modoActual === 'macro' && document.getElementById('macro-results').classList.contains('hidden')) {
+                container.classList.remove('hidden'); loading.classList.add('hidden');
+                report.innerHTML = `<span class="text-red-400">⚠️ Presiona "Actualizar y Analizar" primero para generar la matriz de datos de la ruleta.</span>`; return;
+            }
+
+            btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed');
+            container.classList.remove('hidden'); loading.classList.remove('hidden'); report.innerHTML = '';
+
+            setTimeout(() => {
+                let htmlStr = generarReporteTiming(modoActual);
+                loading.classList.add('hidden'); 
+                report.innerHTML = htmlStr;
+                btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }, 1200); 
+        }
+
+        function generarReporteTiming(modo) {
+            if (zonasCalientes.length === 0) {
+                return `<div class="text-center text-gray-400 text-[11px] py-2">Mesa sin sesgo claro o recolectando datos para calcular el punto de entrada óptimo...</div>`;
+            }
+
+            let dirOptima = 'CW';
+            let waitSpins = 0;
+            let sectorObj = zonasCalientes[0].centro;
+            let razon = "";
+            let winRateMsg = "";
+
+            if (modo === 'exacto') {
+                let hitsCW = 0, hitsCCW = 0;
+                let topZoneNums = zonasCalientes[0].numeros;
+                historialTiradas.forEach(t => {
+                    if (topZoneNums.includes(t.num)) {
+                        if (t.dir === 'CW') hitsCW++;
+                        else hitsCCW++;
+                    }
+                });
+
+                if (hitsCW >= hitsCCW) {
+                    dirOptima = 'CW';
+                    razon = "El crupier muestra una menor dispersión y mayor acierto en el sector cuando gira el rotor hacia la derecha.";
+                } else {
+                    dirOptima = 'CCW';
+                    razon = "Se detectó que el péndulo físico de la bola cierra más preciso en el sector cuando el giro es hacia la izquierda.";
+                }
+
+                let nextDir = direccionActualBola; 
+                if (nextDir === dirOptima) {
+                    waitSpins = 0;
+                } else {
+                    waitSpins = 1;
+                }
+                winRateMsg = `Probabilidad de Entrada: ${Math.max(51, 40 + ((Math.max(hitsCW, hitsCCW)/historialTiradas.length)*300)).toFixed(1)}%`;
+
+            } else {
+                dirOptima = direccionMacro === 'CW' ? 'CCW' : 'CW'; 
+                waitSpins = 0; 
+                razon = "En macroestadística, se recomienda entrar en el cruce de entropía a favor del giro alterno para cortar rachas negativas de varianza.";
+                let maxD = estadisticasCalculadas.reduce((max, s) => s.desviacion > max ? s.desviacion : max, 0);
+                winRateMsg = `Tasa de Éxito Proyectada: ${Math.min(95, 45 + (maxD * 5)).toFixed(1)}%`;
+            }
+
+            let dirStr = dirOptima === 'CW' ? '↻ HORARIA (Der)' : '↺ ANTIHORARIA (Izq)';
+            let dirColor = dirOptima === 'CW' ? 'text-blue-400' : 'text-purple-400';
+            let waitStr = waitSpins === 0 ? '<span class="text-green-400 font-bold">APOSTAR AHORA</span> (0 giros)' : `<span class="text-yellow-400 font-bold">ESPERAR ${waitSpins} GIRO</span>`;
+
+            return `
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="bg-gray-950 p-2 rounded-lg border border-gray-800 flex flex-col items-center text-center shadow-inner">
+                        <span class="text-[9px] text-gray-500 uppercase font-bold mb-1 border-b border-gray-800 pb-1">Dirección Óptima</span>
+                        <span class="text-xs sm:text-sm font-extrabold ${dirColor} mt-1">${dirStr}</span>
+                    </div>
+                    <div class="bg-gray-950 p-2 rounded-lg border border-gray-800 flex flex-col items-center text-center shadow-inner">
+                        <span class="text-[9px] text-gray-500 uppercase font-bold mb-1 border-b border-gray-800 pb-1">Timing (Espera)</span>
+                        <span class="text-xs mt-1">${waitStr}</span>
+                    </div>
+                </div>
+                <div class="bg-gray-800/50 p-2.5 rounded border border-gray-700">
+                    <p class="text-[10px] sm:text-xs text-gray-300 leading-tight mb-2"><strong>🎯 Acción Sugerida:</strong> Cuando el crupier tire en dirección <strong class="${dirColor}">${dirStr}</strong>, ataca el sector del <strong>${sectorObj}</strong>.</p>
+                    <p class="text-[9px] sm:text-[10px] text-gray-400 leading-tight"><strong>🧠 Motivo Matemático:</strong> ${razon}</p>
+                    <div class="mt-2 pt-2 border-t border-gray-700 flex justify-between items-center">
+                        <span class="text-[9px] sm:text-[10px] text-emerald-400 font-mono font-bold">${winRateMsg}</span>
+                        <span class="text-[8px] sm:text-[9px] text-gray-400 font-mono bg-gray-950 px-2 py-0.5 rounded border border-gray-800">CÁLCULO EV+</span>
+                    </div>
+                </div>
+            `;
         }
 
         /* GRÁFICOS Y CANVA */
