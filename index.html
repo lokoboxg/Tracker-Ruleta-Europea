@@ -177,7 +177,19 @@
     <!-- WRAPPER PRINCIPAL -->
     <div class="max-w-7xl mx-auto main-content-wrapper">
         
-        <header class="mb-5 flex flex-col justify-center items-center gap-4 border-b border-gray-800 pb-4">
+        <header class="mb-5 relative flex flex-col justify-center items-center gap-4 border-b border-gray-800 pb-4">
+            <!-- Menú de Idiomas Glassmorfismo -->
+            <div id="lang-btn-container" class="absolute right-0 top-0 md:top-2 md:right-2 z-50">
+                <button onclick="toggleLangMenu()" class="w-8 h-8 rounded-lg bg-gray-800/80 border border-gray-600 text-xs font-bold text-gray-300 hover:text-white hover:border-blue-400 transition-colors backdrop-blur-md flex items-center justify-center shadow-lg active:scale-95">ES</button>
+                <div id="lang-menu" class="hidden absolute right-0 mt-2 w-28 rounded-xl glass-nav border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.8)] overflow-hidden flex-col transition-all">
+                    <button class="w-full text-left px-3 py-2.5 text-[11px] font-bold text-white bg-blue-600/40 hover:bg-blue-500/60 transition-colors border-b border-white/5">🇪🇸 Español</button>
+                    <button class="w-full text-left px-3 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-gray-700/60 transition-colors border-b border-white/5">🇺🇸 English</button>
+                    <button class="w-full text-left px-3 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-gray-700/60 transition-colors border-b border-white/5">🇧🇷 Português</button>
+                    <button class="w-full text-left px-3 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-gray-700/60 transition-colors border-b border-white/5">🇫🇷 Français</button>
+                    <button class="w-full text-left px-3 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-gray-700/60 transition-colors">🇮🇹 Italiano</button>
+                </div>
+            </div>
+            
             <h1 class="neon-title text-2xl font-extrabold tracking-tight flex items-center justify-center gap-2">
                 <span class="text-blue-400 neon-text-glow">◈</span> SectorAnalyzer <span class="text-[10px] bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded border border-purple-800" style="text-shadow: none;"> Asesor AI </span>
             </h1>
@@ -300,8 +312,15 @@
                 <div id="panel-exacto" class="flex flex-col gap-6">
                     
                     <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800">
-                        <h2 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">⚙️ Perfil Físico de la Mesa</h2>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-sm font-semibold text-gray-300 flex items-center gap-2">⚙️ Perfil Físico de la Mesa</h2>
+                            <!-- Switch Activar/Desactivar Perfil Exacto -->
+                            <label class="relative inline-flex items-center cursor-pointer" title="Activar/Desactivar ajustes físicos">
+                                <input type="checkbox" id="switch-perfil-exacto" class="sr-only peer" checked onchange="togglePerfilCalculo('exacto')">
+                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        <div id="contenedor-opciones-exacto" class="grid grid-cols-1 sm:grid-cols-3 gap-3 transition-opacity duration-300">
                             <div class="bg-gray-950 p-2 rounded border border-gray-700">
                                 <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Tipo de Ruleta</label>
                                 <div class="flex flex-wrap gap-1">
@@ -373,9 +392,18 @@
                 <!-- PANEL MODO MACRO -->
                 <div id="panel-macro" class="hidden flex-col gap-6">
                     <div class="bg-gray-900 p-4 rounded-2xl shadow-xl border border-gray-800 relative z-10">
-                         <h2 class="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">⚙️ Perfil Físico y Dirección (Macro)</h2>
-                         <p class="text-[10px] text-gray-400 mb-3">Ajusta la configuración. La dirección del último giro impacta el cálculo de Momentum de la bola.</p>
-                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                         <div class="flex justify-between items-start mb-3">
+                             <div>
+                                 <h2 class="text-sm font-semibold text-gray-300 flex items-center gap-2">⚙️ Perfil Físico y Dirección (Macro)</h2>
+                                 <p class="text-[10px] text-gray-400 mt-1">Ajusta la configuración. La dirección impacta el Momentum.</p>
+                             </div>
+                             <!-- Switch Activar/Desactivar Perfil Macro -->
+                             <label class="relative inline-flex items-center cursor-pointer mt-1 ml-2" title="Activar/Desactivar ajustes físicos">
+                                <input type="checkbox" id="switch-perfil-macro" class="sr-only peer" checked onchange="togglePerfilCalculo('macro')">
+                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                            </label>
+                         </div>
+                         <div id="contenedor-opciones-macro" class="grid grid-cols-1 sm:grid-cols-4 gap-3 transition-opacity duration-300">
                             <div class="bg-gray-950 p-2 rounded border border-gray-700">
                                 <label class="text-[10px] text-gray-500 block mb-1 uppercase text-center">Tipo de Ruleta</label>
                                 <div class="flex flex-wrap gap-1">
@@ -621,6 +649,27 @@
         let direccionActualBola = 'CW'; 
         let direccionImportacion = 'CW'; 
 
+        let calcPerfilExactoActivo = true;
+        let calcPerfilMacroActivo = true;
+
+        /* GESTIÓN DE IDIOMAS */
+        function toggleLangMenu() {
+            const menu = document.getElementById('lang-menu');
+            menu.classList.toggle('hidden');
+            menu.classList.toggle('flex');
+        }
+
+        document.addEventListener('click', (e) => {
+            const container = e.target.closest('#lang-btn-container');
+            if(!container) {
+                const menu = document.getElementById('lang-menu');
+                if(menu && !menu.classList.contains('hidden')) {
+                    menu.classList.add('hidden');
+                    menu.classList.remove('flex');
+                }
+            }
+        });
+
         /* GESTIÓN DE BLOQUEO LEGAL E INICIO DE DRAGGABLES */
         function iniciarApp() {
             if (appInicializada) return;
@@ -714,6 +763,11 @@
                 titulo: "🎯 SECCIONES Y RESULTADOS",
                 texto: "<b>Secciones Más Probables:</b> Muestra el Clúster Balístico principal donde caerá la bola según la inercia (Modo Exacto).<br><b>Resultados de Intersección:</b> Cruza todas las estadísticas Macro y te muestra los números individuales con mayor calor acumulado.",
                 color: "green"
+            },
+            {
+                titulo: "⏱️ TIMING ESTRATÉGICO AI",
+                texto: "El panel de <b>Timing Estratégico AI</b> evalúa la dirección óptima de lanzamiento. Te indicará hacia qué lado el crupier es más predecible (EV+) y si debes apostar o esperar a la siguiente ronda.",
+                color: "teal"
             },
             {
                 titulo: "🔥 MAPA BALÍSTICO",
@@ -901,6 +955,20 @@
             document.getElementById('mac-dir-cw').className = dir === 'CW' ? "flex-1 text-xs py-1 rounded border border-blue-500 bg-blue-600 text-white font-bold transition-colors" : "flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors";
             document.getElementById('mac-dir-ccw').className = dir === 'CCW' ? "flex-1 text-xs py-1 rounded border border-blue-500 bg-blue-600 text-white font-bold transition-colors" : "flex-1 text-xs py-1 rounded border border-gray-600 text-gray-400 hover:bg-gray-800 transition-colors";
             if(!document.getElementById('macro-results').classList.contains('hidden')) calcularPrediccionMacro(); 
+        }
+
+        function togglePerfilCalculo(modo) {
+            if (modo === 'exacto') {
+                calcPerfilExactoActivo = document.getElementById('switch-perfil-exacto').checked;
+                document.getElementById('contenedor-opciones-exacto').style.opacity = calcPerfilExactoActivo ? '1' : '0.4';
+                document.getElementById('contenedor-opciones-exacto').style.pointerEvents = calcPerfilExactoActivo ? 'auto' : 'none';
+                actualizarUIExacto();
+            } else {
+                calcPerfilMacroActivo = document.getElementById('switch-perfil-macro').checked;
+                document.getElementById('contenedor-opciones-macro').style.opacity = calcPerfilMacroActivo ? '1' : '0.4';
+                document.getElementById('contenedor-opciones-macro').style.pointerEvents = calcPerfilMacroActivo ? 'auto' : 'none';
+                if(!document.getElementById('macro-results').classList.contains('hidden')) calcularPrediccionMacro();
+            }
         }
 
         function setDireccion(dir) {
@@ -1175,7 +1243,9 @@
                 estadisticasCalculadas.push({ numero: num, apariciones: conteo[num], desviacion: desvBase });
             }
 
-            analizarClusteresFisicos(perfilFisicoExacto); dibujarMapas();
+            const perfilAUsar = calcPerfilExactoActivo ? perfilFisicoExacto : { tipo: 'default', sexo: 'default', postura: 'default' };
+            analizarClusteresFisicos(perfilAUsar); 
+            dibujarMapas();
             
             const display = document.getElementById('historial-display');
             document.getElementById('total-tiradas').innerText = total;
@@ -1229,7 +1299,7 @@
                 let currNum = RUEDA_EUROPEA[i];
                 let stat = tempStats.find(s => s.numero === currNum);
                 
-                if(stat.desviacion > 0) {
+                if(stat.desviacion > 0 && calcPerfilMacroActivo) {
                     let saltoFisico = direccionMacro === 'CW' ? 2 : -2; 
                     let nextIndex = (i + saltoFisico + 37) % 37;
                     let targetNum = RUEDA_EUROPEA[nextIndex];
@@ -1238,7 +1308,8 @@
                 }
             }
 
-            analizarClusteresFisicos(perfilFisicoMacro); 
+            const perfilAUsar = calcPerfilMacroActivo ? perfilFisicoMacro : { tipo: 'default', sexo: 'default', postura: 'default' };
+            analizarClusteresFisicos(perfilAUsar); 
             dibujarMapas();
             
             document.getElementById('status-indicator').innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]"></span> MACRO ACTIVO`;
